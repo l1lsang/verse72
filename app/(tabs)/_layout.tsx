@@ -1,33 +1,64 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { useTheme } from "@/src/theme/ThemeProvider";
+import { Ionicons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function TabsLayout() {
+  const { colors } = useTheme();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.subText,
+        tabBarStyle: {
+          backgroundColor: colors.background,
+          borderTopColor: colors.border,
+        },
+      }}
+    >
+      {/* 🏠 홈 */}
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: "홈",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons
+              name="home-outline"
+              size={size}
+              color={color}
+            />
+          ),
         }}
       />
+
+      {/* 📖 72구절 (말씀 진입점) */}
       <Tabs.Screen
-        name="explore"
+        name="72/index" 
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: "말씀",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons
+              name="book-outline"
+              size={size}
+              color={color}
+            />
+          ),
+        }}
+      />
+
+      {/* 👤 마이페이지 */}
+      <Tabs.Screen
+        name="mypage"
+        options={{
+          title: "마이페이지",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons
+              name="person-outline"
+              size={size}
+              color={color}
+            />
+          ),
         }}
       />
     </Tabs>

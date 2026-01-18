@@ -1,98 +1,186 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import {
+  FirebaseMemorizedVerse,
+  getMemorizedFromFirebase,
+} from "@/src/storage/memorize.firebase";
+import { useTheme } from "@/src/theme/ThemeProvider";
+
+const TOTAL_VERSES = 72;
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const { colors } = useTheme();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const [recent, setRecent] =
+    useState<FirebaseMemorizedVerse | null>(null);
+  const [count, setCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  // 🔁 홈 탭 포커스될 때마다 Firebase에서 갱신
+  const loadData = async () => {
+    try {
+      const list = await getMemorizedFromFirebase();
+      setRecent(list[0] ?? null);
+      setCount(list.length);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      loadData();
+    }, [])
+  );
+
+  const progressPercent = Math.min(
+    (count / TOTAL_VERSES) * 100,
+    100
+  );
+
+  // 📊 진행도 색상 규칙
+  const progressColor =
+    progressPercent >= 70
+      ? colors.success
+      : colors.primary;
+
+  if (loading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: colors.background },
+        ]}
+      >
+        <Text style={{ color: colors.subText }}>
+          말씀 불러오는 중…
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.background },
+      ]}
+    >
+      <Text style={[styles.title, { color: colors.text }]}>
+        Verse72
+      </Text>
+
+      {/* 📊 암송 진행도 */}
+      <Text style={[styles.section, { color: colors.text }]}>
+        암송 진행도
+      </Text>
+
+      <View
+        style={[
+          styles.progressBox,
+          { backgroundColor: colors.progressBg },
+        ]}
+      >
+        <View
+          style={[
+            styles.progressBar,
+            {
+              width: `${progressPercent}%`,
+              backgroundColor: progressColor,
+            },
+          ]}
+        />
+      </View>
+
+      <Text style={[styles.sub, { color: colors.subText }]}>
+        {count} / {TOTAL_VERSES} 구절
+      </Text>
+
+      {/* 🏠 최근 암송 */}
+      <Text style={[styles.section, { color: colors.text }]}>
+        최근 외운 말씀
+      </Text>
+
+      {recent ? (
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: colors.card },
+          ]}
+        >
+          <Text
+            style={[
+              styles.reference,
+              { color: colors.text },
+            ]}
+          >
+            {recent.reference}
+          </Text>
+
+          <Text
+            style={[
+              styles.text,
+              { color: colors.subText },
+            ]}
+            numberOfLines={2}
+          >
+            {recent.text}
+          </Text>
+        </View>
+      ) : (
+        <Text style={[styles.empty, { color: colors.subText }]}>
+          아직 외운 말씀이 없어요 🙏
+        </Text>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    padding: 24,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  title: {
+    fontSize: 28,
+    fontWeight: "700",
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+
+  section: {
+    marginTop: 32,
+    fontSize: 18,
+    fontWeight: "600",
+  },
+
+  progressBox: {
+    height: 12,
+    borderRadius: 6,
+    marginTop: 12,
+    overflow: "hidden",
+  },
+  progressBar: {
+    height: "100%",
+  },
+  sub: {
+    marginTop: 6,
+  },
+
+  card: {
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 12,
+  },
+  reference: {
+    fontWeight: "600",
+  },
+  text: {
+    marginTop: 6,
+  },
+
+  empty: {
+    marginTop: 12,
   },
 });
