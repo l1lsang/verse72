@@ -1,19 +1,25 @@
 import { ThemeProvider } from "@/src/theme/ThemeProvider";
-import { getKeyHash, initializeKakaoSDK } from "@react-native-kakao/core";
+import { initializeKakaoSDK } from "@react-native-kakao/core";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
-import { Alert } from "react-native";
+import { InteractionManager } from "react-native";
 
 export default function RootLayout() {
   useEffect(() => {
-    initializeKakaoSDK({
-      appKey: process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY!,
-    });
+    InteractionManager.runAfterInteractions(() => {
+      try {
+        const appKey = process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY;
 
-    // 🔥 플랜 B: 키 해시 직접 출력
-    getKeyHash().then((hash) => {
-      console.log("🔥 Kakao KeyHash:", hash);
-      Alert.alert("Kakao KeyHash", hash);
+        if (!appKey || appKey.length < 10) {
+          console.log("❌ Kakao appKey is invalid:", appKey);
+          return;
+        }
+
+        initializeKakaoSDK({ appKey });
+        console.log("✅ Kakao SDK initialized");
+      } catch (e) {
+        console.log("🔥 Kakao SDK init failed", e);
+      }
     });
   }, []);
 
@@ -23,4 +29,3 @@ export default function RootLayout() {
     </ThemeProvider>
   );
 }
-
