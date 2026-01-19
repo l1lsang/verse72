@@ -13,13 +13,19 @@ buildscript {
 }
 
 allprojects {
-  repositories {
-    maven { url "https://devrepo.kakao.com/nexus/content/groups/public/" }
-    google()
-    mavenCentral()
-    maven { url 'https://www.jitpack.io' }
-  }
+    repositories {
+        // 🔥 Kakao Android SDK (필수)
+        maven { url 'https://devrepo.kakao.com/nexus/content/groups/public/' }
+
+        // 기본 저장소
+        google()
+        mavenCentral()
+
+        // 기타 라이브러리
+        maven { url 'https://www.jitpack.io' }
+    }
 }
+
 
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
