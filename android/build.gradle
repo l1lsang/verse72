@@ -11,18 +11,17 @@ buildscript {
     classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
   }
 }
-
 allprojects {
     repositories {
-        // 🔥 Kakao Android SDK (필수)
-        maven { url 'https://devrepo.kakao.com/nexus/content/groups/public/' }
-
-        // 기본 저장소
         google()
         mavenCentral()
 
-        // 기타 라이브러리
-        maven { url 'https://www.jitpack.io' }
+        // React Native / Expo
+        maven { url("$rootDir/../node_modules/react-native/android") }
+        maven { url("$rootDir/../node_modules/jsc-android/dist") }
+
+        // Kakao RN SDK
+        maven { url "https://www.jitpack.io" }
     }
 }
 
