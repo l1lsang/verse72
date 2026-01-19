@@ -36,7 +36,7 @@ export default function TestIndex() {
           color: colors.text,
         }}
       >
-        모의 고사
+        모의고사
       </Text>
 
       <Text

@@ -70,7 +70,7 @@ export default function HomeScreen() {
       ]}
     >
       <Text style={[styles.title, { color: colors.text }]}>
-        Verse72
+        일용할 양식
       </Text>
 
       {/* 📊 암송 진행도 */}
