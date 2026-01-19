@@ -2,31 +2,124 @@ import { router, useFocusEffect } from "expo-router";
 import { signOut } from "firebase/auth";
 import { useCallback, useMemo, useState } from "react";
 import {
-    Alert,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  Alert,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
 import { auth } from "@/src/config/firebase";
 import { verseGroups } from "@/src/data/verseGroups";
 import { verses72 } from "@/src/data/verses72";
 import {
-    FirebaseMemorizedVerse,
-    getMemorizedFromFirebase,
+  getMemorizeRecords,
+  MemorizeRecord,
+} from "@/src/storage/memorize";
+import {
+  FirebaseMemorizedVerse,
+  getMemorizedFromFirebase,
 } from "@/src/storage/memorize.firebase";
 import { useTheme } from "@/src/theme/ThemeProvider";
 
 const TOTAL = 72;
+
+/* =========================
+   📊 시험 히스토리 그래프
+   ========================= */
+function TestHistoryChart({ records }: { records: MemorizeRecord[] }) {
+  const { colors } = useTheme();
+
+  if (records.length === 0) {
+    return (
+      <Text style={{ color: colors.subText, marginTop: 12 }}>
+        아직 암송 시험 기록이 없습니다.
+      </Text>
+    );
+  }
+
+  const maxHeight = 110;
+  const recent = records.slice(-10);
+
+  return (
+    <View
+      style={{
+        marginTop: 16,
+        padding: 16,
+        borderRadius: 12,
+        backgroundColor: colors.card,
+      }}
+    >
+      <Text
+        style={{
+          fontSize: 16,
+          fontWeight: "600",
+          color: colors.text,
+          marginBottom: 12,
+        }}
+      >
+        📊 암송 시험 히스토리
+      </Text>
+
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "flex-end",
+          height: maxHeight,
+        }}
+      >
+        {recent.map((r) => {
+          const ratio = r.total === 0 ? 0 : r.score / r.total;
+          const barHeight = Math.max(8, ratio * maxHeight);
+
+          return (
+            <View
+              key={r.id}
+              style={{ flex: 1, alignItems: "center" }}
+            >
+              <View
+                style={{
+                  width: 14,
+                  height: barHeight,
+                  borderRadius: 6,
+                  backgroundColor: colors.primary,
+                }}
+              />
+              <Text
+                style={{
+                  marginTop: 6,
+                  fontSize: 10,
+                  color: colors.subText,
+                }}
+              >
+                {Math.round(ratio * 100)}%
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+
+      <Text
+        style={{
+          marginTop: 8,
+          fontSize: 12,
+          color: colors.subText,
+        }}
+      >
+        최근 {recent.length}회 시험
+      </Text>
+    </View>
+  );
+}
 
 export default function MyPageScreen() {
   const { colors, mode, setMode } = useTheme();
   const user = auth.currentUser;
 
   const [memorized, setMemorized] = useState<FirebaseMemorizedVerse[]>([]);
+  const [testRecords, setTestRecords] = useState<MemorizeRecord[]>([]);
   const [loading, setLoading] = useState(false);
 
   const loadData = async () => {
@@ -42,6 +135,7 @@ export default function MyPageScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData();
+      getMemorizeRecords().then(setTestRecords);
     }, [])
   );
 
@@ -174,6 +268,13 @@ export default function MyPageScreen() {
         </View>
       ))}
 
+      {/* 시험 히스토리 */}
+      <Text style={[styles.section, { color: colors.text }]}>
+        암송 시험 기록
+      </Text>
+
+      <TestHistoryChart records={testRecords} />
+
       {/* 화면 모드 */}
       <Text style={[styles.section, { color: colors.text }]}>
         화면 모드
@@ -270,7 +371,6 @@ const styles = StyleSheet.create({
   sub: {
     marginTop: 6,
   },
-
   modeContainer: {
     marginTop: 12,
     gap: 10,
@@ -282,7 +382,6 @@ const styles = StyleSheet.create({
   modeText: {
     fontWeight: "600",
   },
-
   logout: {
     marginTop: 40,
     paddingVertical: 16,

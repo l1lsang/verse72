@@ -1,27 +1,34 @@
 export const LightColors = {
-  background: "#ffffff",
-  text: "#111111",
-  subText: "#666666",
+  /* 🌿 Background */
+  background: "#FAF7F2",     // 아이보리 베이지 (메인 배경)
+  card: "#FFFFFF",           // 말씀 카드
+  border: "#E6E2DD",         // 아주 연한 경계
 
-  card: "#f5f5f5",
-  border: "#eeeeee",
+  /* ✍️ Text */
+  text: "#3F3A36",           // 말씀 본문 (다크 브라운 그레이)
+  subText: "#9A948F",        // 설명 / 캡션
 
-  primary: "#4a6cf7",
-  success: "#2e7d32",
+  /* 🌷 Accent */
+  primary: "#F3C6B6",        // 연살구 (Verse72 포인트)
+  success: "#BFD8C2",        // 암송 완료 (세이지)
 
-  progressBg: "#eeeeee",
+  /* 📊 Progress */
+  progressBg: "#F1EEE9",     // 진행 바 배경
 };
-
 export const DarkColors = {
-  background: "#0f0f0f",
-  text: "#ffffff",
-  subText: "#aaaaaa",
+  /* 🌌 Background */
+  background: "#1C1A18",     // 딥 차콜 브라운
+  card: "#26231F",           // 다크 카드
+  border: "#3A3530",         // 은은한 경계
 
-  card: "#1a1a1a",
-  border: "#2a2a2a",
+  /* ✍️ Text */
+  text: "#EAE4DC",           // 웜 아이보리 (말씀)
+  subText: "#9C968F",        // 캡션 / 설명
 
-  primary: "#8aa2ff",
-  success: "#6fdc8c",
+  /* 🌷 Accent */
+  primary: "#C89B8B",        // 더스티 로즈
+  success: "#8FAF9A",        // 다크 세이지
 
-  progressBg: "#2a2a2a",
+  /* 📊 Progress */
+  progressBg: "#2F2B27",     // 다크 진행 바 배경
 };

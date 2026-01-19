@@ -4,7 +4,9 @@ import { Stack } from "expo-router";
 import { useEffect } from "react";
 import { InteractionManager } from "react-native";
 
+
 export default function RootLayout() {
+ 
   useEffect(() => {
     InteractionManager.runAfterInteractions(() => {
       const appKey = process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY;

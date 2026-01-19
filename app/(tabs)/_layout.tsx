@@ -23,26 +23,29 @@ export default function TabsLayout() {
         options={{
           title: "홈",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons
-              name="home-outline"
-              size={size}
-              color={color}
-            />
+            <Ionicons name="home-outline" size={size} color={color} />
           ),
         }}
       />
 
       {/* 📖 72구절 (말씀 진입점) */}
       <Tabs.Screen
-        name="72/index" 
+        name="72/index"
         options={{
           title: "말씀",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons
-              name="book-outline"
-              size={size}
-              color={color}
-            />
+            <Ionicons name="book-outline" size={size} color={color} />
+          ),
+        }}
+      />
+
+      {/* 📝 암송 테스트 */}
+      <Tabs.Screen
+        name="test/index"
+        options={{
+          title: "시험",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="create-outline" size={size} color={color} />
           ),
         }}
       />
@@ -53,11 +56,7 @@ export default function TabsLayout() {
         options={{
           title: "마이페이지",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons
-              name="person-outline"
-              size={size}
-              color={color}
-            />
+            <Ionicons name="person-outline" size={size} color={color} />
           ),
         }}
       />
