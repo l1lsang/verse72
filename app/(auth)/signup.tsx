@@ -4,12 +4,12 @@ import { useState } from "react";
 import {
   Alert,
   Pressable,
-  StyleSheet,
   Text,
   TextInput,
-  View,
+  View
 } from "react-native";
 
+import { syncUserToFirestore } from "@/src/auth/syncUser"; // 🔥 추가
 import { auth } from "@/src/config/firebase";
 import { useTheme } from "@/src/theme/ThemeProvider";
 
@@ -21,8 +21,12 @@ export default function SignupScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const signup = async () => {
-    // ✅ 1. 기본 검증
-    if (!email || !password || !confirmPassword) {
+    const safeEmail = email.trim(); // ✅ 이메일만 trim
+
+    // ===============================
+    // 🔎 기본 검증
+    // ===============================
+    if (!safeEmail || !password || !confirmPassword) {
       Alert.alert("입력 오류", "모든 항목을 입력해주세요.");
       return;
     }
@@ -44,10 +48,32 @@ export default function SignupScreen() {
     }
 
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      // ===============================
+      // ✨ Firebase Auth 회원가입
+      // ===============================
+      await createUserWithEmailAndPassword(
+        auth,
+        safeEmail,
+        password
+      );
+
+      // ===============================
+      // 📄 Firestore 사용자 문서 동기화
+      // ===============================
+      await syncUserToFirestore({
+        provider: "email",
+      });
+
+      // ===============================
+      // 🚀 홈으로 이동
+      // ===============================
       router.replace("/");
     } catch (e: any) {
-      Alert.alert("회원가입 실패", e.message);
+      console.error("🔥 SIGNUP ERROR:", e);
+      Alert.alert(
+        "회원가입 실패",
+        e?.message ?? "회원가입 중 오류가 발생했습니다."
+      );
     }
   };
 
@@ -110,7 +136,7 @@ export default function SignupScreen() {
                 ? colors.border
                 : password === confirmPassword
                 ? colors.success
-                : "#e57373", // ❌ 불일치 시 빨강
+                : "#e57373",
             color: colors.text,
           },
         ]}
@@ -130,33 +156,3 @@ export default function SignupScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 24,
-    justifyContent: "center",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 24,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-  },
-  button: {
-    padding: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 12,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-});

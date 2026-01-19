@@ -28,24 +28,55 @@ export default function LoginScreen() {
   // ✉️ 이메일 로그인
   // ===============================
   const loginWithEmail = async () => {
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
+    const safeEmail = email.trim(); // ✅ 이메일만 trim
 
+    if (!safeEmail || !password) {
+      Alert.alert("입력 오류", "이메일과 비밀번호를 입력해주세요.");
+      return;
+    }
+
+    try {
+      // 1️⃣ Firebase Auth 로그인
+      await signInWithEmailAndPassword(
+        auth,
+        safeEmail,
+        password
+      );
+
+      // 2️⃣ Firestore 사용자 동기화
       await syncUserToFirestore({
         provider: "email",
       });
 
+      // 3️⃣ 홈 이동
       router.replace("/");
     } catch (e: any) {
-      Alert.alert(
-        "로그인 실패",
-        e?.message ?? "이메일 로그인에 실패했습니다."
-      );
+      console.error("🔥 EMAIL LOGIN ERROR:", e?.code, e?.message);
+
+      let message = "이메일 로그인에 실패했습니다.";
+
+      switch (e?.code) {
+        case "auth/user-not-found":
+          message = "존재하지 않는 계정입니다.";
+          break;
+        case "auth/wrong-password":
+          message = "비밀번호가 올바르지 않습니다.";
+          break;
+        case "auth/invalid-email":
+          message = "이메일 형식이 올바르지 않습니다.";
+          break;
+        case "auth/too-many-requests":
+          message =
+            "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.";
+          break;
+      }
+
+      Alert.alert("로그인 실패", message);
     }
   };
 
   // ===============================
-  // 🟡 카카오 네이티브 로그인 (최종 안정판)
+  // 🟡 카카오 네이티브 로그인
   // ===============================
   const loginWithKakao = async () => {
     try {
@@ -53,9 +84,8 @@ export default function LoginScreen() {
 
       // 1️⃣ 카카오 로그인
       const token = await kakaoNativeLogin();
-      console.log("🟢 [KAKAO] token:", token);
-
       const accessToken = token?.accessToken;
+
       if (!accessToken) {
         throw new Error("카카오 accessToken 없음");
       }
@@ -85,10 +115,11 @@ export default function LoginScreen() {
 
       router.replace("/");
     } catch (e: any) {
-      console.error("🔥 [KAKAO LOGIN ERROR]", e);
+      console.error("🔥 KAKAO LOGIN ERROR:", e);
+
       Alert.alert(
         "카카오 로그인 실패",
-        e?.message ?? "알 수 없는 오류"
+        e?.message ?? "카카오 로그인 중 오류가 발생했습니다."
       );
     }
   };

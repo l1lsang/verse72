@@ -2,10 +2,20 @@ import { BlurView } from "expo-blur";
 import { useLocalSearchParams } from "expo-router";
 import * as Speech from "expo-speech";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import { verses72 } from "@/src/data/verses72";
-import { saveMemorizedToFirebase } from "@/src/storage/memorize.firebase";
+import {
+  checkMemorizedFromFirebase,
+  removeMemorizedFromFirebase,
+  saveMemorizedToFirebase,
+} from "@/src/storage/memorize.firebase";
 import { useTheme } from "@/src/theme/ThemeProvider";
 
 export default function VerseDetail() {
@@ -16,6 +26,8 @@ export default function VerseDetail() {
 
   const [hidden, setHidden] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const [isMemorized, setIsMemorized] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // 🔇 화면 나갈 때 음성 정지
   useEffect(() => {
@@ -23,6 +35,26 @@ export default function VerseDetail() {
       Speech.stop();
     };
   }, []);
+
+  // 🔍 이미 외운 말씀인지 확인
+  useEffect(() => {
+    if (!id) return;
+
+    setLoading(true);
+
+    const check = async () => {
+      try {
+        const exists = await checkMemorizedFromFirebase(id);
+        setIsMemorized(exists);
+      } catch (e) {
+        console.log("🔥 memorized check error", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    check();
+  }, [id]);
 
   if (!verse) {
     return (
@@ -58,21 +90,33 @@ export default function VerseDetail() {
     });
   };
 
-  // ✅ 외웠어요 → Firebase 저장
-  const onMemorized = async () => {
-    try {
-      await saveMemorizedToFirebase({
-        id: verse.id,
-        reference: verse.reference,
-        text: verse.text,
-      });
+  // 🔁 외웠어요 ↔ 못 외웠어요 토글
+  const onToggleMemorized = async () => {
+    if (loading) return; // 🔒 중복 클릭 방지
+    setLoading(true);
 
-      Alert.alert(
-        "저장 완료 🙏",
-        "다른 기기에서도 이 말씀이 기억돼요!"
-      );
-    } catch {
-      Alert.alert("오류", "저장 중 문제가 발생했어요.");
+    try {
+      if (!isMemorized) {
+        // ✅ 외웠어요
+        await saveMemorizedToFirebase({
+          id: verse.id,
+          reference: verse.reference,
+          text: verse.text,
+        });
+
+        Alert.alert("저장 완료 🙏", "이 말씀이 기억되었어요.");
+        setIsMemorized(true);
+      } else {
+        // ↩ 못 외웠어요
+        await removeMemorizedFromFirebase(verse.id);
+
+        Alert.alert("괜찮아요 🤍", "다시 천천히 외워볼게요.");
+        setIsMemorized(false);
+      }
+    } catch (e) {
+      Alert.alert("오류", "처리 중 문제가 발생했어요.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -123,7 +167,7 @@ export default function VerseDetail() {
           ]}
           onPress={speak}
         >
-          <Text style={styles.buttonText}>
+          <Text style={[styles.buttonText, { color: "#fff" }]}>
             {speaking ? "⏹ 중지" : "🔊 듣기"}
           </Text>
         </Pressable>
@@ -146,16 +190,31 @@ export default function VerseDetail() {
           </Text>
         </Pressable>
 
-        {/* ✅ 외웠어요 */}
+        {/* ✅ 외웠어요 / ↩ 못 외웠어요 */}
         <Pressable
+          disabled={loading}
           style={[
             styles.memorizedButton,
-            { backgroundColor: colors.success },
+            {
+              backgroundColor: isMemorized
+                ? colors.card
+                : colors.success,
+              opacity: loading ? 0.6 : 1,
+            },
           ]}
-          onPress={onMemorized}
+          onPress={onToggleMemorized}
         >
-          <Text style={styles.buttonText}>
-            ✅ 외웠어요
+          <Text
+            style={[
+              styles.buttonText,
+              {
+                color: isMemorized
+                  ? colors.text
+                  : "#ffffff",
+              },
+            ]}
+          >
+            {isMemorized ? "↩ 못 외웠어요" : "✅ 외웠어요"}
           </Text>
         </Pressable>
       </View>
@@ -214,7 +273,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonText: {
-    color: "#ffffff",
     fontSize: 16,
     fontWeight: "600",
   },
