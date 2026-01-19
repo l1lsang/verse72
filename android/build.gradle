@@ -11,20 +11,15 @@ buildscript {
     classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
   }
 }
+
 allprojects {
-    repositories {
-        google()
-        mavenCentral()
-
-        // React Native / Expo
-        maven { url("$rootDir/../node_modules/react-native/android") }
-        maven { url("$rootDir/../node_modules/jsc-android/dist") }
-
-        // Kakao RN SDK
-        maven { url "https://www.jitpack.io" }
-    }
+  repositories {
+    maven { url "https://devrepo.kakao.com/nexus/content/groups/public/" }
+    google()
+    mavenCentral()
+    maven { url 'https://www.jitpack.io' }
+  }
 }
-
 
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
