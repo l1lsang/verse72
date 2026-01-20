@@ -1,39 +1,36 @@
-import * as AuthSession from "expo-auth-session";
-import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 
-// 🔥 로그인 완료 후 앱 복귀 필수
+// 🔥 웹 OAuth 완료 처리
 WebBrowser.maybeCompleteAuthSession();
 
 const KAKAO_REST_API_KEY =
   process.env.EXPO_PUBLIC_KAKAO_REST_KEY!;
 
-export async function loginWithKakaoWeb() {
-  const redirectUri = AuthSession.makeRedirectUri({
-    scheme: "verse72",
-    path: "login",
-  });
+// ✅ 반드시 서버와 동일한 웹 redirect URI
+const REDIRECT_URI =
+  "https://verse72.vercel.app/auth/kakao";
 
+export async function loginWithKakaoWeb() {
   const authUrl =
     "https://kauth.kakao.com/oauth/authorize" +
     `?response_type=code` +
     `&client_id=${KAKAO_REST_API_KEY}` +
-    `&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
 
   const result = await WebBrowser.openAuthSessionAsync(
     authUrl,
-    redirectUri
+    REDIRECT_URI
   );
 
   if (result.type !== "success") {
     throw new Error("카카오 로그인 취소");
   }
 
-  // ✅ React Native 방식으로 URL 파싱
-  const parsed = Linking.parse(result.url);
-  const code = parsed.queryParams?.code;
+  // ✅ 웹 URL 파싱
+  const url = new URL(result.url);
+  const code = url.searchParams.get("code");
 
-  if (!code || typeof code !== "string") {
+  if (!code) {
     throw new Error("카카오 인가 코드 없음");
   }
 
