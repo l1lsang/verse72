@@ -3,7 +3,7 @@
     "name": "일용할 양식",
     "slug": "verse72",
     "scheme": "verse72",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "splash": {
@@ -16,12 +16,12 @@
 
     "ios": {
       "bundleIdentifier": "com.quokka.dailybread",
-      "buildNumber": "3"
+      "buildNumber": "4"
     },
 
     "android": {
       "package": "com.quokka.dailybread",
-      "versionCode": 3
+      "versionCode": 4
     },
 
     "extra": {
