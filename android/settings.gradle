@@ -37,10 +37,3 @@ expoAutolinking.useExpoVersionCatalog()
 
 include ':app'
 includeBuild(expoAutolinking.reactNativeGradlePlugin)
-include ':react-native-kakao_core'
-project(':react-native-kakao_core').projectDir =
-    new File(rootProject.projectDir, '../node_modules/@react-native-kakao/core/android')
-
-include ':react-native-kakao_user'
-project(':react-native-kakao_user').projectDir =
-    new File(rootProject.projectDir, '../node_modules/@react-native-kakao/user/android')
