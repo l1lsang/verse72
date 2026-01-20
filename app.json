@@ -12,17 +12,23 @@
     },
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+
     "ios": {
-      "bundleIdentifier": "com.quokka.dailybread"
+      "bundleIdentifier": "com.quokka.dailybread",
+      "buildNumber": "2"
     },
+
     "android": {
-      "package": "com.quokka.dailybread"
+      "package": "com.quokka.dailybread",
+      "versionCode": 2
     },
+
     "extra": {
       "eas": {
         "projectId": "c3609fab-af53-4466-b35d-7efa26a3f4b2"
       }
     },
+
     "plugins": [
       [
         "expo-build-properties",
