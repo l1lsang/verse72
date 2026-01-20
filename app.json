@@ -16,12 +16,12 @@
 
     "ios": {
       "bundleIdentifier": "com.quokka.dailybread",
-      "buildNumber": "5"
+      "buildNumber": "6"
     },
 
     "android": {
       "package": "com.quokka.dailybread",
-      "versionCode": 5
+      "versionCode": 6
     },
 
     "extra": {
