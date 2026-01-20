@@ -1,15 +1,14 @@
-import { router } from "expo-router";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import {
   Alert,
   Pressable,
+  StyleSheet,
   Text,
   TextInput,
-  View
+  View,
 } from "react-native";
 
-import { syncUserToFirestore } from "@/src/auth/syncUser"; // 🔥 추가
 import { auth } from "@/src/config/firebase";
 import { useTheme } from "@/src/theme/ThemeProvider";
 
@@ -19,13 +18,12 @@ export default function SignupScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const signup = async () => {
-    const safeEmail = email.trim(); // ✅ 이메일만 trim
+    const safeEmail = email.trim();
 
-    // ===============================
     // 🔎 기본 검증
-    // ===============================
     if (!safeEmail || !password || !confirmPassword) {
       Alert.alert("입력 오류", "모든 항목을 입력해주세요.");
       return;
@@ -47,33 +45,31 @@ export default function SignupScreen() {
       return;
     }
 
+    if (loading) return;
+
     try {
-      // ===============================
+      setLoading(true);
+
       // ✨ Firebase Auth 회원가입
-      // ===============================
       await createUserWithEmailAndPassword(
         auth,
         safeEmail,
         password
       );
 
-      // ===============================
-      // 📄 Firestore 사용자 문서 동기화
-      // ===============================
-      await syncUserToFirestore({
-        provider: "email",
-      });
+      // ✅ 여기서 끝
+      // → auth 상태 변경
+      // → RootLayout이 자동으로 홈 이동
 
-      // ===============================
-      // 🚀 홈으로 이동
-      // ===============================
-      router.replace("/");
+      Alert.alert("환영합니다 🙏", "회원가입이 완료되었습니다.");
     } catch (e: any) {
       console.error("🔥 SIGNUP ERROR:", e);
       Alert.alert(
         "회원가입 실패",
         e?.message ?? "회원가입 중 오류가 발생했습니다."
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -88,7 +84,6 @@ export default function SignupScreen() {
         회원가입
       </Text>
 
-      {/* 이메일 */}
       <TextInput
         placeholder="이메일"
         placeholderTextColor={colors.subText}
@@ -96,16 +91,12 @@ export default function SignupScreen() {
         onChangeText={setEmail}
         style={[
           styles.input,
-          {
-            borderColor: colors.border,
-            color: colors.text,
-          },
+          { borderColor: colors.border, color: colors.text },
         ]}
         autoCapitalize="none"
         keyboardType="email-address"
       />
 
-      {/* 비밀번호 */}
       <TextInput
         placeholder="비밀번호 (6자 이상)"
         placeholderTextColor={colors.subText}
@@ -114,14 +105,10 @@ export default function SignupScreen() {
         secureTextEntry
         style={[
           styles.input,
-          {
-            borderColor: colors.border,
-            color: colors.text,
-          },
+          { borderColor: colors.border, color: colors.text },
         ]}
       />
 
-      {/* 비밀번호 확인 */}
       <TextInput
         placeholder="비밀번호 확인"
         placeholderTextColor={colors.subText}
@@ -143,16 +130,50 @@ export default function SignupScreen() {
       />
 
       <Pressable
+        disabled={loading}
         style={[
           styles.button,
-          { backgroundColor: colors.primary },
+          {
+            backgroundColor: colors.primary,
+            opacity: loading ? 0.6 : 1,
+          },
         ]}
         onPress={signup}
       >
         <Text style={styles.buttonText}>
-          가입하기
+          {loading ? "가입 중..." : "가입하기"}
         </Text>
       </Pressable>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 24,
+    justifyContent: "center",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 24,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  button: {
+    padding: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 12,
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+});

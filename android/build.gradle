@@ -9,12 +9,15 @@ buildscript {
     classpath('com.android.tools.build:gradle')
     classpath('com.facebook.react:react-native-gradle-plugin')
     classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
+    implementation project(':react-native-kakao_core')
+implementation project(':react-native-kakao_user')
+
   }
 }
 
 allprojects {
   repositories {
-    maven {
+     maven {
             url "https://devrepo.kakao.com/nexus/content/groups/public/"
         }
     google()

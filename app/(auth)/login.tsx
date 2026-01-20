@@ -1,6 +1,4 @@
-import { router } from "expo-router";
 import {
-  signInWithCustomToken,
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { useState } from "react";
@@ -13,8 +11,7 @@ import {
   View,
 } from "react-native";
 
-import { kakaoNativeLogin } from "@/src/auth/kakaoLogin";
-import { syncUserToFirestore } from "@/src/auth/syncUser";
+import { loginWithKakaoWeb } from "@/src/auth/loginWithKakaoWeb"; // ✅ 웹 카카오 로그인
 import { auth } from "@/src/config/firebase";
 import { useTheme } from "@/src/theme/ThemeProvider";
 
@@ -23,33 +20,34 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // ===============================
   // ✉️ 이메일 로그인
   // ===============================
   const loginWithEmail = async () => {
-    const safeEmail = email.trim(); // ✅ 이메일만 trim
+    const safeEmail = email.trim();
 
     if (!safeEmail || !password) {
       Alert.alert("입력 오류", "이메일과 비밀번호를 입력해주세요.");
       return;
     }
 
+    if (loading) return;
+
     try {
-      // 1️⃣ Firebase Auth 로그인
+      setLoading(true);
+
       await signInWithEmailAndPassword(
         auth,
         safeEmail,
         password
       );
 
-      // 2️⃣ Firestore 사용자 동기화
-      await syncUserToFirestore({
-        provider: "email",
-      });
+      // ✅ 여기서 끝
+      // → Auth 상태 변경
+      // → RootLayout이 자동으로 홈 이동
 
-      // 3️⃣ 홈 이동
-      router.replace("/");
     } catch (e: any) {
       console.error("🔥 EMAIL LOGIN ERROR:", e?.code, e?.message);
 
@@ -72,55 +70,33 @@ export default function LoginScreen() {
       }
 
       Alert.alert("로그인 실패", message);
+    } finally {
+      setLoading(false);
     }
   };
 
   // ===============================
-  // 🟡 카카오 네이티브 로그인
+  // 🟡 카카오 웹 로그인
   // ===============================
   const loginWithKakao = async () => {
+    if (loading) return;
+
     try {
-      console.log("🟡 [KAKAO] 네이티브 로그인 시작");
+      setLoading(true);
 
-      // 1️⃣ 카카오 로그인
-      const token = await kakaoNativeLogin();
-      const accessToken = token?.accessToken;
+      await loginWithKakaoWeb();
+      // ✅ 여기서 끝
+      // → Firebase 로그인 완료
+      // → RootLayout이 홈으로 이동
 
-      if (!accessToken) {
-        throw new Error("카카오 accessToken 없음");
-      }
-
-      // 2️⃣ 서버 → Firebase Custom Token
-      const res = await fetch(
-        "https://72-self.vercel.app/api/auth/kakao",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ accessToken }),
-        }
-      );
-
-      const data = await res.json();
-      if (!data?.customToken) {
-        throw new Error("Firebase Custom Token 발급 실패");
-      }
-
-      // 3️⃣ Firebase 로그인
-      await signInWithCustomToken(auth, data.customToken);
-
-      // 4️⃣ Firestore 동기화
-      await syncUserToFirestore({
-        provider: "kakao",
-      });
-
-      router.replace("/");
     } catch (e: any) {
-      console.error("🔥 KAKAO LOGIN ERROR:", e);
-
+      console.error("🔥 KAKAO WEB LOGIN ERROR:", e);
       Alert.alert(
         "카카오 로그인 실패",
         e?.message ?? "카카오 로그인 중 오류가 발생했습니다."
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -161,13 +137,19 @@ export default function LoginScreen() {
       />
 
       <Pressable
+        disabled={loading}
         style={[
           styles.button,
-          { backgroundColor: colors.primary },
+          {
+            backgroundColor: colors.primary,
+            opacity: loading ? 0.6 : 1,
+          },
         ]}
         onPress={loginWithEmail}
       >
-        <Text style={styles.buttonText}>로그인</Text>
+        <Text style={styles.buttonText}>
+          {loading ? "로그인 중..." : "로그인"}
+        </Text>
       </Pressable>
 
       <Text
@@ -181,17 +163,15 @@ export default function LoginScreen() {
       </Text>
 
       <Pressable
-        style={styles.kakaoButton}
+        disabled={loading}
+        style={[
+          styles.kakaoButton,
+          { opacity: loading ? 0.6 : 1 },
+        ]}
         onPress={loginWithKakao}
       >
         <Text style={styles.kakaoButtonText}>
           카카오로 로그인
-        </Text>
-      </Pressable>
-
-      <Pressable onPress={() => router.push("/signup")}>
-        <Text style={[styles.link, { color: colors.primary }]}>
-          회원가입
         </Text>
       </Pressable>
     </View>
@@ -236,10 +216,5 @@ const styles = StyleSheet.create({
     color: "#000",
     fontWeight: "700",
     fontSize: 16,
-  },
-  link: {
-    marginTop: 16,
-    textAlign: "center",
-    fontWeight: "600",
   },
 });
