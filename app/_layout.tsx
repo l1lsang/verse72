@@ -17,18 +17,26 @@ export default function RootLayout() {
     return unsub;
   }, []);
 
-  // 🔥 Auth 상태 확인 전에는 아무것도 렌더 안 함
+  // 🔥 Auth 상태 확인 전에는 아무것도 렌더하지 않음
   if (loading) return null;
 
   return (
     <ThemeProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        {user ? (
+      {user ? (
+        <Stack
+          key="tabs"
+          screenOptions={{ headerShown: false }}
+        >
           <Stack.Screen name="(tabs)" />
-        ) : (
+        </Stack>
+      ) : (
+        <Stack
+          key="auth"
+          screenOptions={{ headerShown: false }}
+        >
           <Stack.Screen name="(auth)" />
-        )}
-      </Stack>
+        </Stack>
+      )}
     </ThemeProvider>
   );
 }
