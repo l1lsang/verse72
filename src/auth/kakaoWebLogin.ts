@@ -1,37 +1,40 @@
+import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 
+// 🔥 이거 없으면 로그인 취소 많이 뜸
 WebBrowser.maybeCompleteAuthSession();
 
 const KAKAO_REST_API_KEY =
-  process.env.EXPO_PUBLIC_KAKAO_REST_API_KEY!;
+  process.env.EXPO_PUBLIC_KAKAO_REST_KEY!;
 
-const REDIRECT_URI =
-  "https://72-self.vercel.app/auth/kakao/callback";
+export async function kakaoWebLogin() {
+  // ✅ app.json scheme 기반 redirectUri
+  const redirectUri = AuthSession.makeRedirectUri({
+    scheme: "verse72",
+  });
 
-/**
- * 카카오 웹 로그인 → 인가 코드 반환
- */
-export async function kakaoWebLogin(): Promise<string> {
   const authUrl =
-    `https://kauth.kakao.com/oauth/authorize` +
+    "https://kauth.kakao.com/oauth/authorize" +
     `?response_type=code` +
     `&client_id=${KAKAO_REST_API_KEY}` +
-    `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+    `&redirect_uri=${encodeURIComponent(redirectUri)}`;
 
   const result = await WebBrowser.openAuthSessionAsync(
     authUrl,
-    REDIRECT_URI
+    redirectUri
   );
 
   if (result.type !== "success") {
     throw new Error("카카오 로그인 취소");
   }
 
+  // 🔑 redirectUri로 돌아오면서 붙은 code 파싱
   const url = result.url;
-  const code = new URL(url).searchParams.get("code");
+  const params = new URL(url).searchParams;
+  const code = params.get("code");
 
   if (!code) {
-    throw new Error("인가 코드 없음");
+    throw new Error("카카오 인가 코드 없음");
   }
 
   return code;
