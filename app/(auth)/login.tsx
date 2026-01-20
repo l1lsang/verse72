@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
@@ -11,7 +12,7 @@ import {
   View,
 } from "react-native";
 
-import { loginWithKakaoWeb } from "@/src/auth/loginWithKakaoWeb"; // ✅ 웹 카카오 로그인
+import { loginWithKakaoWeb } from "@/src/auth/loginWithKakaoWeb"; // 🟡 카카오 웹 로그인
 import { auth } from "@/src/config/firebase";
 import { useTheme } from "@/src/theme/ThemeProvider";
 
@@ -44,9 +45,7 @@ export default function LoginScreen() {
         password
       );
 
-      // ✅ 여기서 끝
-      // → Auth 상태 변경
-      // → RootLayout이 자동으로 홈 이동
+      // ✅ Auth 상태 변경 → RootLayout에서 자동 이동
 
     } catch (e: any) {
       console.error("🔥 EMAIL LOGIN ERROR:", e?.code, e?.message);
@@ -85,9 +84,7 @@ export default function LoginScreen() {
       setLoading(true);
 
       await loginWithKakaoWeb();
-      // ✅ 여기서 끝
-      // → Firebase 로그인 완료
-      // → RootLayout이 홈으로 이동
+      // ✅ Firebase 로그인 완료 → RootLayout 이동
 
     } catch (e: any) {
       console.error("🔥 KAKAO WEB LOGIN ERROR:", e);
@@ -172,6 +169,34 @@ export default function LoginScreen() {
       >
         <Text style={styles.kakaoButtonText}>
           카카오로 로그인
+        </Text>
+      </Pressable>
+
+      {/* 👇 회원가입 */}
+      <Text
+        style={{
+          textAlign: "center",
+          marginTop: 20,
+          color: colors.subText,
+          fontSize: 13,
+        }}
+      >
+        아직 계정이 없으신가요?
+      </Text>
+
+      <Pressable
+        disabled={loading}
+        onPress={() => router.push("/signup")}
+        style={{ marginTop: 6 }}
+      >
+        <Text
+          style={{
+            textAlign: "center",
+            color: colors.primary,
+            fontWeight: "600",
+          }}
+        >
+          회원가입
         </Text>
       </Pressable>
     </View>

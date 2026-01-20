@@ -3,6 +3,7 @@ import { signOut } from "firebase/auth";
 import { useCallback, useMemo, useState } from "react";
 import {
   Alert,
+  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -75,10 +76,7 @@ function TestHistoryChart({ records }: { records: MemorizeRecord[] }) {
           const barHeight = Math.max(8, ratio * maxHeight);
 
           return (
-            <View
-              key={r.id}
-              style={{ flex: 1, alignItems: "center" }}
-            >
+            <View key={r.id} style={{ flex: 1, alignItems: "center" }}>
               <View
                 style={{
                   width: 14,
@@ -170,22 +168,20 @@ export default function MyPageScreen() {
   }, [memorized]);
 
   const logout = () => {
-    Alert.alert(
-      "로그아웃",
-      "정말 로그아웃 할까요?",
-      [
-        { text: "취소", style: "cancel" },
-        {
-          text: "로그아웃",
-          style: "destructive",
-          onPress: async () => {
-            await signOut(auth);
-            router.replace("/login");
-          },
+    Alert.alert("로그아웃", "정말 로그아웃 할까요?", [
+      { text: "취소", style: "cancel" },
+      {
+        text: "로그아웃",
+        style: "destructive",
+        onPress: async () => {
+          await signOut(auth);
+          router.replace("/login");
         },
-      ]
-    );
+      },
+    ]);
   };
+
+  const isKakao = user?.providerData[0]?.providerId === "kakao.com";
 
   return (
     <ScrollView
@@ -198,14 +194,39 @@ export default function MyPageScreen() {
         마이페이지
       </Text>
 
-      {/* 사용자 */}
-      <View style={[styles.card, { backgroundColor: colors.card }]}>
-        <Text style={[styles.label, { color: colors.subText }]}>
-          이메일
-        </Text>
-        <Text style={[styles.value, { color: colors.text }]}>
-          {user?.email ?? "-"}
-        </Text>
+      {/* 사용자 정보 */}
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: colors.card,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 12,
+          },
+        ]}
+      >
+        {user?.photoURL ? (
+          <Image
+            source={{ uri: user.photoURL }}
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 24,
+              backgroundColor: colors.progressBg,
+            }}
+          />
+        ) : null}
+
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.label, { color: colors.subText }]}>
+            {isKakao ? "카카오 계정" : "이메일"}
+          </Text>
+
+          <Text style={[styles.value, { color: colors.text }]}>
+            {user?.displayName || user?.email || "-"}
+          </Text>
+        </View>
       </View>
 
       {/* 전체 진행도 */}
@@ -318,10 +339,7 @@ export default function MyPageScreen() {
 
       {/* 로그아웃 */}
       <Pressable
-        style={[
-          styles.logout,
-          { backgroundColor: colors.card },
-        ]}
+        style={[styles.logout, { backgroundColor: colors.card }]}
         onPress={logout}
       >
         <Text style={{ color: "#e57373", fontWeight: "600" }}>
