@@ -1,27 +1,36 @@
-import { auth } from "@/src/config/firebase";
-import { signInWithCustomToken } from "firebase/auth";
-import { kakaoWebLogin } from "./kakaoWebLogin";
+import * as AuthSession from "expo-auth-session";
+import * as WebBrowser from "expo-web-browser";
 
-export async function loginWithKakaoWeb() {
-  // 1️⃣ 카카오 웹 로그인
-  const code = await kakaoWebLogin();
+// 🔥 이 줄이 없으면 "로그인 취소" 많이 뜸
+WebBrowser.maybeCompleteAuthSession();
 
-  // 2️⃣ 서버에 code 전달
-  const res = await fetch(
-    "https://72-self.vercel.app/api/auth/kakao",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code }),
-    }
-  );
+const KAKAO_REST_API_KEY = process.env.EXPO_PUBLIC_KAKAO_REST_KEY!;
 
-  const data = await res.json();
+export async function kakaoWebLogin() {
+  // ✅ app.json의 scheme 기반 redirectUri 생성
+  const redirectUri = AuthSession.makeRedirectUri({
+    scheme: "verse72",
+  });
 
-  if (!data?.customToken) {
-    throw new Error("Firebase Custom Token 발급 실패");
+  const authUrl =
+    "https://kauth.kakao.com/oauth/authorize" +
+    `?response_type=code` +
+    `&client_id=${KAKAO_REST_API_KEY}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}`;
+
+  const result = await AuthSession.startAsync({
+    authUrl,
+  });
+
+  if (result.type !== "success") {
+    throw new Error("카카오 로그인 취소");
   }
 
-  // 3️⃣ Firebase 로그인
-  await signInWithCustomToken(auth, data.customToken);
+  const code = result.params?.code;
+
+  if (!code) {
+    throw new Error("카카오 인가 코드 없음");
+  }
+
+  return code;
 }

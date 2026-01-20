@@ -2,6 +2,7 @@
   "expo": {
     "name": "일용할 양식",
     "slug": "verse72",
+    "scheme": "verse72",
     "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
