@@ -1,7 +1,5 @@
 import { router } from "expo-router";
-import {
-  signInWithEmailAndPassword,
-} from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import {
   Alert,
@@ -12,7 +10,6 @@ import {
   View,
 } from "react-native";
 
-import { loginWithKakaoWeb } from "@/src/auth/loginWithKakaoWeb"; // 🟡 카카오 웹 로그인
 import { auth } from "@/src/config/firebase";
 import { useTheme } from "@/src/theme/ThemeProvider";
 
@@ -39,13 +36,19 @@ export default function LoginScreen() {
     try {
       setLoading(true);
 
+      console.log("🟡 try email login");
+
       await signInWithEmailAndPassword(
         auth,
         safeEmail,
         password
       );
 
-      // ✅ Auth 상태 변경 → RootLayout에서 자동 이동
+      console.log("🟢 email login success");
+
+      // 🔥 핵심: 반드시 루트로 돌아가서
+      // _layout.tsx가 user 상태를 다시 평가하게 함
+      router.replace("/");
 
     } catch (e: any) {
       console.error("🔥 EMAIL LOGIN ERROR:", e?.code, e?.message);
@@ -69,33 +72,6 @@ export default function LoginScreen() {
       }
 
       Alert.alert("로그인 실패", message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ===============================
-  // 🟡 카카오 웹 로그인
-  // ===============================
-  const loginWithKakao = async () => {
-    if (loading) return;
-
-    try {
-      setLoading(true);
-
-      // ✅ 여기서는 "브라우저 열기"까지만
-      await loginWithKakaoWeb();
-
-      // 🔥 실제 Firebase 로그인은
-      // 딥링크(verse72://login?token=...)를
-      // 받는 쪽(RootLayout/App.tsx)에서 처리됨
-
-    } catch (e: any) {
-      console.error("🔥 KAKAO WEB LOGIN ERROR:", e);
-      Alert.alert(
-        "카카오 로그인 실패",
-        e?.message ?? "카카오 로그인 중 오류가 발생했습니다."
-      );
     } finally {
       setLoading(false);
     }
@@ -153,45 +129,9 @@ export default function LoginScreen() {
         </Text>
       </Pressable>
 
-      <Text
-        style={{
-          textAlign: "center",
-          marginVertical: 16,
-          color: colors.subText,
-        }}
-      >
-        또는
-      </Text>
-
       <Pressable
-        disabled={loading}
-        style={[
-          styles.kakaoButton,
-          { opacity: loading ? 0.6 : 1 },
-        ]}
-        onPress={loginWithKakao}
-      >
-        <Text style={styles.kakaoButtonText}>
-          카카오로 로그인
-        </Text>
-      </Pressable>
-
-      {/* 👇 회원가입 */}
-      <Text
-        style={{
-          textAlign: "center",
-          marginTop: 20,
-          color: colors.subText,
-          fontSize: 13,
-        }}
-      >
-        아직 계정이 없으신가요?
-      </Text>
-
-      <Pressable
-        disabled={loading}
         onPress={() => router.push("/signup")}
-        style={{ marginTop: 6 }}
+        style={{ marginTop: 20 }}
       >
         <Text
           style={{
@@ -233,17 +173,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontWeight: "600",
-    fontSize: 16,
-  },
-  kakaoButton: {
-    backgroundColor: "#FEE500",
-    padding: 14,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  kakaoButtonText: {
-    color: "#000",
-    fontWeight: "700",
     fontSize: 16,
   },
 });
