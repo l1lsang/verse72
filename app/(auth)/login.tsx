@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import {
@@ -20,9 +21,9 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // ===============================
-  // ✉️ 이메일 로그인
-  // ===============================
+  /* ===============================
+     ✉️ 이메일 로그인
+     =============================== */
   const loginWithEmail = async () => {
     const safeEmail = email.trim();
 
@@ -35,7 +36,6 @@ export default function LoginScreen() {
 
     try {
       setLoading(true);
-
       console.log("🟡 try email login");
 
       await signInWithEmailAndPassword(
@@ -46,8 +46,7 @@ export default function LoginScreen() {
 
       console.log("🟢 email login success");
 
-      // 🔥 핵심: 반드시 루트로 돌아가서
-      // _layout.tsx가 user 상태를 다시 평가하게 함
+      // 🔥 반드시 루트로 이동 → _layout.tsx 재평가
       router.replace("/");
 
     } catch (e: any) {
@@ -72,6 +71,38 @@ export default function LoginScreen() {
       }
 
       Alert.alert("로그인 실패", message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ===============================
+     🟡 카카오 로그인 (웹 → 서버 → 딥링크)
+     =============================== */
+  const loginWithKakao = async () => {
+    if (loading) return;
+
+    try {
+      setLoading(true);
+
+      const kakaoAuthUrl =
+        "https://kauth.kakao.com/oauth/authorize" +
+        "?client_id=" + process.env.EXPO_PUBLIC_KAKAO_REST_API_KEY +
+        "&redirect_uri=https://72-3.vercel.app/auth/kakao" +
+        "&response_type=code";
+
+      await WebBrowser.openBrowserAsync(kakaoAuthUrl);
+
+      // 이후 흐름:
+      // 카카오 로그인 성공 →
+      // 서버에서 verse72://login?token=... →
+      // _layout.tsx에서 Firebase 로그인 처리
+    } catch (e) {
+      console.error("🔥 KAKAO LOGIN ERROR:", e);
+      Alert.alert(
+        "카카오 로그인 실패",
+        "카카오 로그인 중 오류가 발생했습니다."
+      );
     } finally {
       setLoading(false);
     }
@@ -113,6 +144,7 @@ export default function LoginScreen() {
         ]}
       />
 
+      {/* ✉️ 이메일 로그인 버튼 */}
       <Pressable
         disabled={loading}
         style={[
@@ -129,9 +161,35 @@ export default function LoginScreen() {
         </Text>
       </Pressable>
 
+      {/* 구분선 */}
+      <Text
+        style={{
+          textAlign: "center",
+          marginVertical: 16,
+          color: colors.subText,
+        }}
+      >
+        또는
+      </Text>
+
+      {/* 🟡 카카오 로그인 버튼 */}
+      <Pressable
+        disabled={loading}
+        onPress={loginWithKakao}
+        style={[
+          styles.kakaoButton,
+          { opacity: loading ? 0.6 : 1 },
+        ]}
+      >
+        <Text style={styles.kakaoButtonText}>
+          카카오로 로그인
+        </Text>
+      </Pressable>
+
+      {/* 회원가입 */}
       <Pressable
         onPress={() => router.push("/signup")}
-        style={{ marginTop: 20 }}
+        style={{ marginTop: 24 }}
       >
         <Text
           style={{
@@ -147,6 +205,9 @@ export default function LoginScreen() {
   );
 }
 
+/* ===============================
+   🎨 스타일
+   =============================== */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -173,6 +234,17 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontWeight: "600",
+    fontSize: 16,
+  },
+  kakaoButton: {
+    backgroundColor: "#FEE500",
+    padding: 14,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  kakaoButtonText: {
+    color: "#000",
+    fontWeight: "700",
     fontSize: 16,
   },
 });
