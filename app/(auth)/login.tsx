@@ -83,8 +83,12 @@ export default function LoginScreen() {
     try {
       setLoading(true);
 
+      // ✅ 여기서는 "브라우저 열기"까지만
       await loginWithKakaoWeb();
-      // ✅ Firebase 로그인 완료 → RootLayout 이동
+
+      // 🔥 실제 Firebase 로그인은
+      // 딥링크(verse72://login?token=...)를
+      // 받는 쪽(RootLayout/App.tsx)에서 처리됨
 
     } catch (e: any) {
       console.error("🔥 KAKAO WEB LOGIN ERROR:", e);

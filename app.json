@@ -4,7 +4,7 @@
     "slug": "verse72",
     "scheme": "verse72",
 
-    "version": "1.1.7",
+    "version": "1.1.10",
 
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -18,16 +18,16 @@
 
     "ios": {
       "bundleIdentifier": "com.quokka.dailybread",
-      "buildNumber": "13"
+      "buildNumber": "16"
     },
 
     "android": {
       "package": "com.quokka.dailybread",
-      "versionCode": 13
+      "versionCode": 16
     },
 
     "extra": {
-      "KAKAO_REST_API_KEY": "312ee803c6925cbae7e3dd4a9a104c30",
+      "KAKAO_REST_API_KEY": "e2936c43f295f62ebe5931ac544fc666",
 
       "eas": {
         "projectId": "c3609fab-af53-4466-b35d-7efa26a3f4b2"

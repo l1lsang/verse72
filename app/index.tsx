@@ -11,11 +11,14 @@ export default function Index() {
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
     });
+
     return unsub;
   }, []);
 
+  // 🔥 Auth 상태 확인 전에는 아무것도 렌더하지 않음
   if (user === undefined) return null;
 
+  // 🔥 로그인 여부에 따라 라우팅
   return user ? (
     <Redirect href="/(tabs)" />
   ) : (
