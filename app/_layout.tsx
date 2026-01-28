@@ -1,7 +1,11 @@
 import { ThemeProvider } from "@/src/theme/ThemeProvider";
 import * as Linking from "expo-linking";
 import { Stack, router } from "expo-router";
-import { onAuthStateChanged, signInWithCustomToken } from "firebase/auth";
+import {
+  onAuthStateChanged,
+  signInWithCustomToken,
+  updateProfile,
+} from "firebase/auth";
 import {
   doc,
   getDoc,
@@ -37,6 +41,7 @@ export default function RootLayout() {
         const snap = await getDoc(ref);
 
         if (!snap.exists()) {
+          // 최초 로그인
           await setDoc(ref, {
             uid: u.uid,
             provider: u.providerData[0]?.providerId ?? "unknown",
@@ -47,6 +52,7 @@ export default function RootLayout() {
             lastLoginAt: serverTimestamp(),
           });
         } else {
+          // 재로그인 → 마지막 로그인 시간만 갱신
           await setDoc(
             ref,
             { lastLoginAt: serverTimestamp() },
@@ -63,7 +69,7 @@ export default function RootLayout() {
 
   /* =========================
      🟡 카카오 딥링크 로그인 처리
-     verse72://login?token=XXXX
+     verse72://login?token=XXX&nickname=YYY&photo=ZZZ
      ========================= */
   useEffect(() => {
     const handleDeepLink = async ({ url }: { url: string }) => {
@@ -71,30 +77,43 @@ export default function RootLayout() {
 
       const parsed = Linking.parse(url);
       const token = parsed.queryParams?.token;
+      const nickname = parsed.queryParams?.nickname;
+      const photo = parsed.queryParams?.photo;
 
       if (!token) return;
 
       try {
         console.log("🟡 Firebase custom token login start");
 
-        await signInWithCustomToken(
+        // 1️⃣ Firebase Custom Token 로그인
+        const cred = await signInWithCustomToken(
           auth,
           decodeURIComponent(String(token))
         );
 
-        console.log("🟢 Kakao Firebase login success");
+        // 2️⃣ 🔥 카카오 프로필 Firebase Auth에 반영
+        await updateProfile(cred.user, {
+          displayName: nickname
+            ? decodeURIComponent(String(nickname))
+            : undefined,
+          photoURL: photo
+            ? decodeURIComponent(String(photo))
+            : undefined,
+        });
 
-        // 🔥 반드시 루트로 이동 → _layout 재평가
+        console.log("🟢 Kakao profile updated");
+
+        // 3️⃣ 루트로 이동 → _layout 재평가
         router.replace("/");
       } catch (e) {
         console.error("🔥 Kakao Firebase login failed:", e);
       }
     };
 
-    // 앱이 실행 중일 때 딥링크 수신
+    // 앱 실행 중 딥링크 수신
     const sub = Linking.addEventListener("url", handleDeepLink);
 
-    // 앱이 꺼진 상태에서 딥링크로 실행된 경우
+    // 앱이 완전히 꺼진 상태에서 딥링크로 실행된 경우
     Linking.getInitialURL().then((url) => {
       if (url) handleDeepLink({ url });
     });
