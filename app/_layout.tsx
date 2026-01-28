@@ -1,4 +1,5 @@
 import { ThemeProvider } from "@/src/theme/ThemeProvider";
+import Constants from "expo-constants";
 import * as Linking from "expo-linking";
 import { Stack, router } from "expo-router";
 import {
@@ -12,7 +13,8 @@ import {
   serverTimestamp,
   setDoc,
 } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Alert } from "react-native";
 
 import { auth, db } from "@/src/config/firebase";
 
@@ -20,31 +22,74 @@ export default function RootLayout() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const updateCheckedRef = useRef(false); // 🔥 중복 방지
+
+  /* =========================
+     🆕 업데이트 권고 체크 (1회)
+     ========================= */
+  useEffect(() => {
+    const checkUpdate = async () => {
+      if (updateCheckedRef.current) return;
+      updateCheckedRef.current = true;
+
+      try {
+        const currentVersion =
+          Constants.expoConfig?.version ?? "0.0.0";
+
+        const ref = doc(db, "settings", "app");
+        const snap = await getDoc(ref);
+
+        if (!snap.exists()) return;
+
+        const { latestVersion, updateMessage } = snap.data();
+
+        if (
+          latestVersion &&
+          latestVersion !== currentVersion
+        ) {
+          Alert.alert(
+            "업데이트 안내",
+            updateMessage ??
+              "새로운 버전이 있어요 🌱\n더 안정적으로 사용하실 수 있어요.",
+            [
+              {
+                text: "업데이트",
+                onPress: () =>
+                  Linking.openURL(
+                    "https://play.google.com/store/apps/details?id=com.quokka.dailybread"
+                  ),
+              },
+              { text: "나중에", style: "cancel" },
+            ]
+          );
+        }
+      } catch (e) {
+        console.log("⚠️ Update check failed:", e);
+      }
+    };
+
+    checkUpdate();
+  }, []);
+
   /* =========================
      🔥 Firebase Auth 상태 리스너
      ========================= */
   useEffect(() => {
-    console.log("🟡 RootLayout mounted");
-
     const unsub = onAuthStateChanged(auth, async (u) => {
-      console.log("🟢 Auth state changed:", u?.uid ?? "null");
-
       setUser(u);
       setLoading(false);
 
-      // 로그인 안 된 상태면 여기까지만
       if (!u) return;
 
-      // 🔽 Firestore 유저 동기화 (실패해도 앱 막지 않음)
       try {
         const ref = doc(db, "users", u.uid);
         const snap = await getDoc(ref);
 
         if (!snap.exists()) {
-          // 최초 로그인
           await setDoc(ref, {
             uid: u.uid,
-            provider: u.providerData[0]?.providerId ?? "unknown",
+            provider:
+              u.providerData[0]?.providerId ?? "unknown",
             email: u.email ?? null,
             displayName: u.displayName ?? null,
             photoURL: u.photoURL ?? null,
@@ -52,7 +97,6 @@ export default function RootLayout() {
             lastLoginAt: serverTimestamp(),
           });
         } else {
-          // 재로그인 → 마지막 로그인 시간만 갱신
           await setDoc(
             ref,
             { lastLoginAt: serverTimestamp() },
@@ -69,12 +113,9 @@ export default function RootLayout() {
 
   /* =========================
      🟡 카카오 딥링크 로그인 처리
-     verse72://login?token=XXX&nickname=YYY&photo=ZZZ
      ========================= */
   useEffect(() => {
     const handleDeepLink = async ({ url }: { url: string }) => {
-      console.log("🟡 Deep link received:", url);
-
       const parsed = Linking.parse(url);
       const token = parsed.queryParams?.token;
       const nickname = parsed.queryParams?.nickname;
@@ -83,15 +124,11 @@ export default function RootLayout() {
       if (!token) return;
 
       try {
-        console.log("🟡 Firebase custom token login start");
-
-        // 1️⃣ Firebase Custom Token 로그인
         const cred = await signInWithCustomToken(
           auth,
           decodeURIComponent(String(token))
         );
 
-        // 2️⃣ 🔥 카카오 프로필 Firebase Auth에 반영
         await updateProfile(cred.user, {
           displayName: nickname
             ? decodeURIComponent(String(nickname))
@@ -101,19 +138,17 @@ export default function RootLayout() {
             : undefined,
         });
 
-        console.log("🟢 Kakao profile updated");
-
-        // 3️⃣ 루트로 이동 → _layout 재평가
         router.replace("/");
       } catch (e) {
         console.error("🔥 Kakao Firebase login failed:", e);
       }
     };
 
-    // 앱 실행 중 딥링크 수신
-    const sub = Linking.addEventListener("url", handleDeepLink);
+    const sub = Linking.addEventListener(
+      "url",
+      handleDeepLink
+    );
 
-    // 앱이 완전히 꺼진 상태에서 딥링크로 실행된 경우
     Linking.getInitialURL().then((url) => {
       if (url) handleDeepLink({ url });
     });
@@ -121,12 +156,10 @@ export default function RootLayout() {
     return () => sub.remove();
   }, []);
 
-  // 🔥 최초 Auth 판별 전에는 아무것도 렌더하지 않음
   if (loading) return null;
 
   return (
     <ThemeProvider>
-      {/* 🔥 Stack은 절대 조건부로 렌더하면 안 됨 */}
       <Stack screenOptions={{ headerShown: false }}>
         {user ? (
           <Stack.Screen name="(tabs)" />

@@ -11,6 +11,7 @@ export const LightColors = {
   /* 🌷 Accent */
   primary: "#F3C6B6",        // 연살구 (Verse72 포인트)
   success: "#BFD8C2",        // 암송 완료 (세이지)
+  error: "#D98A7C",          // 🔥 부드러운 코랄 레드 (경고/나가기)
 
   /* 📊 Progress */
   progressBg: "#F1EEE9",     // 진행 바 배경
@@ -28,6 +29,7 @@ export const DarkColors = {
   /* 🌷 Accent */
   primary: "#C89B8B",        // 더스티 로즈
   success: "#8FAF9A",        // 다크 세이지
+  error: "#D47A6A",          // 🔥 다크모드용 코랄 레드
 
   /* 📊 Progress */
   progressBg: "#2F2B27",     // 다크 진행 바 배경

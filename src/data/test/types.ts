@@ -1,19 +1,55 @@
-export type VerseData = {
-  id: string;
-  group: string;        // A / B / C …
-  theme: string;        // 중심되신 그리스도
-  reference: string;    // 고린도후서 5:17
-  text: string;
-};
-
-export type TestType =
-  | "WORD_BLANK"
-  | "TWO_PHRASE_REST";
+export type TestType = "DUNAMIS" | "YEDADAM";
 
 export type TestQuestion = {
   id: string;
-  type: TestType;
-  prompt: string;       // 빈칸 포함 문제
-  answers: string[];    // 정답
-  verse: VerseData;     // 원문 정보 (채점/표시용)
+  mode: TestType;
+
+  type:
+    | "WORD_BLANK"
+    | "TWO_PHRASE_REST"
+    | "YEDADAM_HARDCORE";
+
+  prompt: string;
+
+  /* =========================
+     🔥 사용자 입력값 (UI)
+     ========================= */
+  input?: {
+    chapter?: string; // 예닮공: "? 장"
+    verse?: string;   // 예닮공: "? 절 (6,7 / 37~39)"
+    text?: string;    // 말씀 본문
+  };
+
+  /* =========================
+     🧮 채점용 정답
+     ========================= */
+  answers: {
+    chapter?: number; // 예닮공만 사용
+    verse?: string;   // 예닮공만 사용
+    text: string;     // 공통
+  };
+
+  verse: VerseData;
+};
+
+export type VerseData = {
+  id: string;
+
+  /* =========================
+     📖 말씀 메타데이터
+     ========================= */
+  book: string;     // 예닮공에서도 "책 이름"은 노출
+  group: string;    // A~F
+  theme: string;    // 주제
+
+  /* =========================
+     🔢 장 / 절
+     ========================= */
+  chapter: number;  // 단일 값
+  verse: string;    // "6,7" / "37~39"
+
+  /* =========================
+     📜 본문
+     ========================= */
+  text: string;
 };
