@@ -15,10 +15,8 @@ export default function RootLayout() {
       setUser(u);
       setLoading(false);
 
-      // 🔥 핵심: Auth만 성공하면 앱 진입 허용
       if (!u) return;
 
-      // 🔽 Firestore는 "보조 작업" (실패해도 앱 막지 않음)
       try {
         const ref = doc(db, "users", u.uid);
         const snap = await getDoc(ref);
@@ -41,7 +39,6 @@ export default function RootLayout() {
           );
         }
       } catch (e) {
-        // ❗ 절대 throw 하지 말 것
         console.error("⚠️ Firestore user sync failed:", e);
       }
     });
@@ -49,20 +46,17 @@ export default function RootLayout() {
     return unsub;
   }, []);
 
-  // 🔥 Auth 상태 확인 전에는 아무것도 렌더하지 않음
   if (loading) return null;
 
   return (
     <ThemeProvider>
-      {user ? (
-        <Stack key="tabs" screenOptions={{ headerShown: false }}>
+      <Stack screenOptions={{ headerShown: false }}>
+        {user ? (
           <Stack.Screen name="(tabs)" />
-        </Stack>
-      ) : (
-        <Stack key="auth" screenOptions={{ headerShown: false }}>
+        ) : (
           <Stack.Screen name="(auth)" />
-        </Stack>
-      )}
+        )}
+      </Stack>
     </ThemeProvider>
   );
 }
