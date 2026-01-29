@@ -58,18 +58,17 @@ function makeTwoPhraseRest(v: VerseData): TestQuestion {
 }
 
 /* =========================
-   🔥 예닮공: 거의 전체 빈칸
+   🔥 예닮공: 단일 큰 빈칸
    ========================= */
-function makeHardcoreBlank(text: string) {
-  return tokenize(text)
-    .map((t) => (t.length > 1 ? "____" : t))
-    .join(" ");
+function makeSingleBigBlank() {
+  return "____________________________";
 }
 
 /* =========================
    🌱 예닮공: 하드코어 암송
    - 책 이름 ❌
    - 장 / 절 입력 필수
+   - 말씀 전체 직접 입력
    ========================= */
 function makeYedadamHardcore(
   v: VerseData
@@ -79,17 +78,17 @@ function makeYedadamHardcore(
     mode: "YEDADAM",
     type: "YEDADAM_HARDCORE",
 
-    // UI에 보여줄 문제
-    prompt: makeHardcoreBlank(v.text),
+    // ✅ 문제: 단일 빈칸 하나
+    prompt: makeSingleBigBlank(),
 
-    // 🔥 UI에서 직접 입력할 대상
+    // 🔥 UI에서 직접 입력
     input: {
-      chapter: "", // TextInput
-      verse: "",   // TextInput
-      text: "",    // 말씀 전체 입력
+      chapter: "",
+      verse: "",
+      text: "",
     },
 
-    // 채점용 정답 (UI에 안 보임)
+    // 🔒 채점용 정답 (UI 비노출)
     answers: {
       chapter: v.chapter,
       verse: v.verse,
@@ -122,5 +121,8 @@ export function generateTestByType(
       return picked.map((v) =>
         makeYedadamHardcore(v)
       );
+
+    default:
+      return [];
   }
 }

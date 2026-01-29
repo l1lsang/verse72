@@ -62,15 +62,7 @@ export default function SeventyTwoGroups() {
             {group.title}
           </Text>
 
-          {/* 설명 */}
-          <Text
-            style={[
-              styles.cardDesc,
-              { color: colors.subText },
-            ]}
-          >
-            {group.description}
-          </Text>
+         
         </Pressable>
       ))}
     </View>

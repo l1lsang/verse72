@@ -116,6 +116,13 @@ export default function MyPageScreen() {
   const { colors, mode, setMode } = useTheme();
   const user = auth.currentUser;
 
+  /* =========================
+     🔑 카카오 프로필 URL https 강제
+     ========================= */
+  const photoURL = user?.photoURL
+    ? user.photoURL.replace("http://", "https://")
+    : null;
+
   const [memorized, setMemorized] = useState<FirebaseMemorizedVerse[]>([]);
   const [testRecords, setTestRecords] = useState<MemorizeRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -206,9 +213,9 @@ export default function MyPageScreen() {
           },
         ]}
       >
-        {user?.photoURL ? (
+        {photoURL ? (
           <Image
-            source={{ uri: user.photoURL }}
+            source={{ uri: photoURL }}
             style={{
               width: 48,
               height: 48,

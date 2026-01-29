@@ -4,7 +4,7 @@
     "slug": "verse72",
     "scheme": "verse72",
 
-    "version": "1.2.0",
+    "version": "1.3.0",
 
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -18,12 +18,12 @@
 
     "ios": {
       "bundleIdentifier": "com.quokka.dailybread",
-      "buildNumber": "18"
+      "buildNumber": "19"
     },
 
     "android": {
       "package": "com.quokka.dailybread",
-      "versionCode": 18
+      "versionCode": 19
     },
 
     "extra": {
