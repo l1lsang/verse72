@@ -1,14 +1,30 @@
 import { useTheme } from "@/src/theme/ThemeProvider";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 
-import { adaptVerse72ToVerseData } from "@/src/data/test/adapter"; // 🔥 추가
+import { adaptVerse72ToVerseData } from "@/src/data/test/adapter";
 import { generateTestByType } from "@/src/data/test/generator";
 import { TestType } from "@/src/data/test/types";
 import { verses72 } from "@/src/data/verses72";
 
 type UITestType = "dunamis" | "yedadam";
+type VerseGroup = "A" | "B" | "C" | "D" | "E" | "F";
+
+const ALL_GROUPS: VerseGroup[] = [
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+];
 
 export default function TestIndex() {
   const { colors } = useTheme();
@@ -18,16 +34,41 @@ export default function TestIndex() {
   const [testType, setTestType] =
     useState<UITestType>("dunamis");
 
+  // 🔥 시험 범위 (A~F, 복수 선택)
+  const [groups, setGroups] = useState<VerseGroup[]>([
+    "A",
+  ]);
+
+  const toggleGroup = (group: VerseGroup) => {
+    setGroups((prev) =>
+      prev.includes(group)
+        ? prev.filter((g) => g !== group)
+        : [...prev, group]
+    );
+  };
+
   const startTest = () => {
-    // 🔥 UI 타입 → 내부 시험 타입 변환
+    if (groups.length === 0) {
+      Alert.alert(
+        "시험 범위 선택",
+        "시험 범위를 하나 이상 선택해주세요."
+      );
+      return;
+    }
+
+    // 🔥 UI 타입 → 내부 시험 타입
     const internalType: TestType =
       testType === "dunamis"
         ? "DUNAMIS"
         : "YEDADAM";
 
-    // 🔥 Verse72 → VerseData 변환 (핵심)
+    // 🔥 group(A~F) 기준 필터링
+    const filteredVerses = verses72.filter((v) =>
+      groups.includes(v.group as VerseGroup)
+    );
+
     const versesForTest =
-      adaptVerse72ToVerseData(verses72);
+      adaptVerse72ToVerseData(filteredVerses);
 
     const questions = generateTestByType(
       internalType,
@@ -40,6 +81,7 @@ export default function TestIndex() {
       params: {
         data: JSON.stringify(questions),
         type: internalType,
+        groups: groups.join(","), // 결과 화면용
       },
     });
   };
@@ -67,7 +109,8 @@ export default function TestIndex() {
           lineHeight: 20,
         }}
       >
-        말씀을 얼마나 정확히 암송하고 있는지 시험으로 확인해 보세요.
+        말씀을 얼마나 정확히 암송하고 있는지
+        시험으로 확인해 보세요.
       </Text>
 
       {/* 시험 형식 선택 */}
@@ -118,6 +161,61 @@ export default function TestIndex() {
             </Pressable>
           );
         })}
+      </View>
+
+      {/* 시험 범위 선택 */}
+      <View style={{ marginTop: 32 }}>
+        <Text
+          style={{
+            fontSize: 16,
+            fontWeight: "600",
+            color: colors.text,
+            marginBottom: 12,
+          }}
+        >
+          시험 범위 선택 (복수 선택 가능)
+        </Text>
+
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: 12,
+          }}
+        >
+          {ALL_GROUPS.map((group) => {
+            const selected = groups.includes(group);
+
+            return (
+              <Pressable
+                key={group}
+                onPress={() => toggleGroup(group)}
+                style={{
+                  paddingVertical: 12,
+                  paddingHorizontal: 18,
+                  borderRadius: 999,
+                  backgroundColor: selected
+                    ? colors.primary
+                    : colors.card,
+                  borderWidth: selected ? 0 : 1,
+                  borderColor: colors.border,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 15,
+                    fontWeight: selected ? "700" : "500",
+                    color: selected
+                      ? "#fff"
+                      : colors.text,
+                  }}
+                >
+                  {group} 범위
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
       {/* 문제 수 선택 */}
@@ -198,7 +296,8 @@ export default function TestIndex() {
       >
         · 문제는 무작위로 출제됩니다.{"\n"}
         · 시험 형식에 따라 난이도가 다릅니다.{"\n"}
-        · 시험 중에는 뒤로 가기 시 진행 상황이 사라질 수 있습니다.
+        · 시험 중에는 뒤로 가기 시 진행 상황이
+        사라질 수 있습니다.
       </Text>
     </ScrollView>
   );

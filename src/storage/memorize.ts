@@ -40,13 +40,18 @@ export async function saveMemorizeRecord(
   const wrongs: WrongAnswer[] = [];
 
   questions.forEach((q, i) => {
-    const correct = q.answers.join(" ").trim();
-    const user = (userAnswers[i] || "").trim();
+    const correct = normalize(q.answers.text);
+    const user = normalize(userAnswers[i] || "");
 
-    if (normalize(correct) !== normalize(user)) {
+    if (correct !== user) {
+      const reference =
+        q.verse.chapter && q.verse.verse
+          ? `${q.verse.chapter}:${q.verse.verse}`
+          : "";
+
       wrongs.push({
         verseId: q.verse.id,
-        reference: q.verse.reference,
+        reference,
         prompt: q.prompt,
         correctAnswer: correct,
         userAnswer: user,
@@ -65,8 +70,12 @@ export async function saveMemorizeRecord(
   const prev = await getMemorizeRecords();
   const next = [record, ...prev];
 
-  await AsyncStorage.setItem(MEMORIZE_KEY, JSON.stringify(next));
+  await AsyncStorage.setItem(
+    MEMORIZE_KEY,
+    JSON.stringify(next)
+  );
 }
+
 
 /* =========================
    📖 불러오기

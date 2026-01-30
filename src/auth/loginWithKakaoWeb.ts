@@ -1,13 +1,12 @@
 import Constants from "expo-constants";
-import * as Linking from "expo-linking";
+import * as WebBrowser from "expo-web-browser";
 
 const KAKAO_REST_API_KEY =
   Constants.expoConfig?.extra?.KAKAO_REST_API_KEY;
 
-const REDIRECT_URI =
-  "https://72-3.vercel.app/auth/kakao";
+const REDIRECT_URI = "https://72-3.vercel.app/auth/kakao";
 
-export function loginWithKakaoWeb() {
+export async function loginWithKakaoWeb() {
   if (!KAKAO_REST_API_KEY) {
     console.error("❌ KAKAO REST API KEY IS UNDEFINED");
     return;
@@ -19,8 +18,14 @@ export function loginWithKakaoWeb() {
     `&client_id=${KAKAO_REST_API_KEY}` +
     `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
 
-  console.log("KAKAO AUTH URL:", authUrl);
+  console.log("🟡 KAKAO AUTH URL:", authUrl);
 
-  // 🔥 무조건 시스템 브라우저
-  Linking.openURL(authUrl);
+  try {
+    await WebBrowser.openAuthSessionAsync(
+      authUrl,
+      REDIRECT_URI
+    );
+  } catch (e) {
+    console.error("🔥 카카오 로그인 실패", e);
+  }
 }

@@ -1,11 +1,10 @@
-import { router, useFocusEffect } from "expo-router";
+import { router } from "expo-router";
 import { signOut } from "firebase/auth";
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Alert,
   Image,
   Pressable,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,16 +12,13 @@ import {
 } from "react-native";
 
 import { auth } from "@/src/config/firebase";
+import { useMemorized } from "@/src/context/MemorizedContext";
 import { verseGroups } from "@/src/data/verseGroups";
 import { verses72 } from "@/src/data/verses72";
 import {
   getMemorizeRecords,
   MemorizeRecord,
 } from "@/src/storage/memorize";
-import {
-  FirebaseMemorizedVerse,
-  getMemorizedFromFirebase,
-} from "@/src/storage/memorize.firebase";
 import { useTheme } from "@/src/theme/ThemeProvider";
 
 const TOTAL = 72;
@@ -30,7 +26,11 @@ const TOTAL = 72;
 /* =========================
    📊 시험 히스토리 그래프
    ========================= */
-function TestHistoryChart({ records }: { records: MemorizeRecord[] }) {
+function TestHistoryChart({
+  records,
+}: {
+  records: MemorizeRecord[];
+}) {
   const { colors } = useTheme();
 
   if (records.length === 0) {
@@ -76,7 +76,10 @@ function TestHistoryChart({ records }: { records: MemorizeRecord[] }) {
           const barHeight = Math.max(8, ratio * maxHeight);
 
           return (
-            <View key={r.id} style={{ flex: 1, alignItems: "center" }}>
+            <View
+              key={r.id}
+              style={{ flex: 1, alignItems: "center" }}
+            >
               <View
                 style={{
                   width: 14,
@@ -117,62 +120,65 @@ export default function MyPageScreen() {
   const user = auth.currentUser;
 
   /* =========================
-     🔑 카카오 프로필 URL https 강제
+     🌍 외운 말씀 전역 상태
      ========================= */
-  const photoURL = user?.photoURL
-    ? user.photoURL.replace("http://", "https://")
-    : null;
-
-  const [memorized, setMemorized] = useState<FirebaseMemorizedVerse[]>([]);
-  const [testRecords, setTestRecords] = useState<MemorizeRecord[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const list = await getMemorizedFromFirebase();
-      setMemorized(list);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-      getMemorizeRecords().then(setTestRecords);
-    }, [])
+  const { memorized } = useMemorized(); // ✅ 핵심
+  const totalCount = memorized.size;
+  const totalPercent = Math.min(
+    (totalCount / TOTAL) * 100,
+    100
   );
 
-  const totalCount = memorized.length;
-  const totalPercent = Math.min((totalCount / TOTAL) * 100, 100);
+  /* =========================
+     📊 시험 기록 (로컬)
+     ========================= */
+  const [testRecords, setTestRecords] = useState<
+    MemorizeRecord[]
+  >([]);
+
+  // 최초 1회 로딩이면 충분
+  useMemo(() => {
+    getMemorizeRecords().then(setTestRecords);
+  }, []);
 
   const getProgressColor = (percent: number) =>
     percent >= 70 ? colors.success : colors.primary;
 
+  /* =========================
+     📊 그룹별 통계 (실시간)
+     ========================= */
   const groupStats = useMemo(() => {
     return verseGroups.map((group) => {
-      const totalInGroup = verses72.filter(
+      const versesInGroup = verses72.filter(
         (v) => v.group === group.key
-      ).length;
+      );
 
-      const memorizedInGroup = memorized.filter((m) =>
-        m.id.startsWith(group.key)
+      const memorizedInGroup = versesInGroup.filter((v) =>
+        memorized.has(v.id)
       ).length;
 
       const percent =
-        totalInGroup === 0
+        versesInGroup.length === 0
           ? 0
-          : (memorizedInGroup / totalInGroup) * 100;
+          : (memorizedInGroup /
+              versesInGroup.length) *
+            100;
 
       return {
         ...group,
         memorized: memorizedInGroup,
-        total: totalInGroup,
+        total: versesInGroup.length,
         percent,
       };
     });
   }, [memorized]);
+
+  /* =========================
+     🔐 로그인 타입 판별
+     ========================= */
+  const isKakao = user?.providerData.some(
+    (p) => p.providerId === "kakao.com"
+  );
 
   const logout = () => {
     Alert.alert("로그아웃", "정말 로그아웃 할까요?", [
@@ -188,14 +194,13 @@ export default function MyPageScreen() {
     ]);
   };
 
-  const isKakao = user?.providerData[0]?.providerId === "kakao.com";
-
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      refreshControl={
-        <RefreshControl refreshing={loading} onRefresh={loadData} />
-      }
+      style={[
+        styles.container,
+        { backgroundColor: colors.background },
+      ]}
+      contentContainerStyle={{ paddingBottom: 120 }}
     >
       <Text style={[styles.title, { color: colors.text }]}>
         마이페이지
@@ -213,24 +218,29 @@ export default function MyPageScreen() {
           },
         ]}
       >
-        {photoURL ? (
+        {user?.photoURL ? (
           <Image
-            source={{ uri: photoURL }}
+            source={{
+              uri: user.photoURL.replace("http://", "https://"),
+            }}
             style={{
               width: 48,
               height: 48,
               borderRadius: 24,
-              backgroundColor: colors.progressBg,
             }}
           />
         ) : null}
 
         <View style={{ flex: 1 }}>
-          <Text style={[styles.label, { color: colors.subText }]}>
-            {isKakao ? "카카오 계정" : "이메일"}
+          <Text
+            style={[styles.label, { color: colors.subText }]}
+          >
+            {isKakao ? "카카오 로그인" : "이메일 로그인"}
           </Text>
 
-          <Text style={[styles.value, { color: colors.text }]}>
+          <Text
+            style={[styles.value, { color: colors.text }]}
+          >
             {user?.displayName || user?.email || "-"}
           </Text>
         </View>
@@ -269,7 +279,9 @@ export default function MyPageScreen() {
 
       {groupStats.map((g) => (
         <View key={g.key} style={{ marginTop: 16 }}>
-          <Text style={{ color: colors.text, fontWeight: "600" }}>
+          <Text
+            style={{ color: colors.text, fontWeight: "600" }}
+          >
             {g.key} · {g.title}
           </Text>
 
@@ -329,7 +341,9 @@ export default function MyPageScreen() {
                 style={[
                   styles.modeText,
                   {
-                    color: selected ? "#fff" : colors.text,
+                    color: selected
+                      ? "#fff"
+                      : colors.text,
                   },
                 ]}
               >
@@ -346,7 +360,10 @@ export default function MyPageScreen() {
 
       {/* 로그아웃 */}
       <Pressable
-        style={[styles.logout, { backgroundColor: colors.card }]}
+        style={[
+          styles.logout,
+          { backgroundColor: colors.card },
+        ]}
         onPress={logout}
       >
         <Text style={{ color: "#e57373", fontWeight: "600" }}>

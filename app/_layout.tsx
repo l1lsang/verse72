@@ -1,3 +1,4 @@
+import { MemorizedProvider } from "@/src/context/MemorizedContext";
 import { ThemeProvider } from "@/src/theme/ThemeProvider";
 import Constants from "expo-constants";
 import * as Linking from "expo-linking";
@@ -22,7 +23,7 @@ export default function RootLayout() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const updateCheckedRef = useRef(false); // 🔥 중복 방지
+  const updateCheckedRef = useRef(false);
 
   /* =========================
      🆕 업데이트 권고 체크 (1회)
@@ -159,14 +160,16 @@ export default function RootLayout() {
   if (loading) return null;
 
   return (
-    <ThemeProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        {user ? (
-          <Stack.Screen name="(tabs)" />
-        ) : (
-          <Stack.Screen name="(auth)" />
-        )}
-      </Stack>
-    </ThemeProvider>
+<ThemeProvider>
+  <MemorizedProvider>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(ending)" />
+    </Stack>
+  </MemorizedProvider>
+</ThemeProvider>
+
+
   );
 }
