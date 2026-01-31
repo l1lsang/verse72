@@ -1,6 +1,5 @@
 import { router } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithCustomToken, signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import {
   Alert,
@@ -13,6 +12,9 @@ import {
 
 import { auth } from "@/src/config/firebase";
 import { useTheme } from "@/src/theme/ThemeProvider";
+
+// ✅ 카카오 네이티브 SDK
+import { login as kakaoLogin } from "@react-native-kakao/user";
 
 export default function LoginScreen() {
   const { colors } = useTheme();
@@ -36,22 +38,12 @@ export default function LoginScreen() {
 
     try {
       setLoading(true);
-      console.log("🟡 try email login");
 
-      await signInWithEmailAndPassword(
-        auth,
-        safeEmail,
-        password
-      );
+      await signInWithEmailAndPassword(auth, safeEmail, password);
 
-      console.log("🟢 email login success");
-
-      // 🔥 반드시 루트로 이동 → _layout.tsx 재평가
+      // 🔥 루트로 이동 → _layout.tsx에서 Auth 상태 재평가
       router.replace("/");
-
     } catch (e: any) {
-      console.error("🔥 EMAIL LOGIN ERROR:", e?.code, e?.message);
-
       let message = "이메일 로그인에 실패했습니다.";
 
       switch (e?.code) {
@@ -77,7 +69,8 @@ export default function LoginScreen() {
   };
 
   /* ===============================
-     🟡 카카오 로그인 (웹 → 서버 → 딥링크)
+     🟡 카카오 로그인
+     (네이티브 SDK → 서버 → Firebase)
      =============================== */
   const loginWithKakao = async () => {
     if (loading) return;
@@ -85,20 +78,49 @@ export default function LoginScreen() {
     try {
       setLoading(true);
 
-      const kakaoAuthUrl =
-        "https://kauth.kakao.com/oauth/authorize" +
-        "?client_id=" + process.env.EXPO_PUBLIC_KAKAO_REST_API_KEY +
-        "&redirect_uri=https://72-3.vercel.app/auth/kakao" +
-        "&response_type=code";
+      /* 1️⃣ 카카오 네이티브 로그인 */
+      const kakaoToken = await kakaoLogin();
+      const kakaoAccessToken = kakaoToken.accessToken;
 
-      await WebBrowser.openBrowserAsync(kakaoAuthUrl);
+      if (!kakaoAccessToken) {
+        throw new Error("No Kakao access token");
+      }
 
-      // 이후 흐름:
-      // 카카오 로그인 성공 →
-      // 서버에서 verse72://login?token=... →
-      // _layout.tsx에서 Firebase 로그인 처리
-    } catch (e) {
+      /* 2️⃣ 서버에 Kakao accessToken 전달 */
+      const res = await fetch(
+        "https://72-3.vercel.app/auth/kakao",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            kakaoAccessToken,
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Server authentication failed");
+      }
+
+      const { customToken } = await res.json();
+
+      if (!customToken) {
+        throw new Error("No Firebase custom token");
+      }
+
+      /* 3️⃣ Firebase Custom Token 로그인 */
+      await signInWithCustomToken(auth, customToken);
+
+      // 🔁 루트로 이동
+      router.replace("/");
+    } catch (e: any) {
       console.error("🔥 KAKAO LOGIN ERROR:", e);
+
+      // 사용자가 취소한 경우는 조용히 종료
+      if (e?.message?.includes("cancel")) return;
+
       Alert.alert(
         "카카오 로그인 실패",
         "카카오 로그인 중 오류가 발생했습니다."
@@ -119,6 +141,7 @@ export default function LoginScreen() {
         로그인
       </Text>
 
+      {/* 이메일 입력 */}
       <TextInput
         placeholder="이메일"
         placeholderTextColor={colors.subText}
@@ -132,6 +155,7 @@ export default function LoginScreen() {
         keyboardType="email-address"
       />
 
+      {/* 비밀번호 입력 */}
       <TextInput
         placeholder="비밀번호"
         placeholderTextColor={colors.subText}
@@ -144,7 +168,7 @@ export default function LoginScreen() {
         ]}
       />
 
-      {/* ✉️ 이메일 로그인 버튼 */}
+      {/* ✉️ 이메일 로그인 */}
       <Pressable
         disabled={loading}
         style={[
@@ -161,7 +185,6 @@ export default function LoginScreen() {
         </Text>
       </Pressable>
 
-      {/* 구분선 */}
       <Text
         style={{
           textAlign: "center",
@@ -172,7 +195,7 @@ export default function LoginScreen() {
         또는
       </Text>
 
-      {/* 🟡 카카오 로그인 버튼 */}
+      {/* 🟡 카카오 로그인 */}
       <Pressable
         disabled={loading}
         onPress={loginWithKakao}

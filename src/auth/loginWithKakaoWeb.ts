@@ -18,9 +18,8 @@ export async function loginWithKakaoWeb() {
     `&client_id=${KAKAO_REST_API_KEY}` +
     `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
 
-  console.log("🟡 KAKAO AUTH URL:", authUrl);
-
   try {
+    // ✅ OAuth 세션 유지 (카카오톡 → 다시 복귀 가능)
     await WebBrowser.openAuthSessionAsync(
       authUrl,
       REDIRECT_URI
