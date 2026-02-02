@@ -176,9 +176,10 @@ export default function MyPageScreen() {
   /* =========================
      🔐 로그인 타입 판별
      ========================= */
-  const isKakao = user?.providerData.some(
-    (p) => p.providerId === "kakao.com"
-  );
+ const isGoogle = user?.providerData.some(
+  (p) => p.providerId === "google.com"
+);
+
 
   const logout = () => {
     Alert.alert("로그아웃", "정말 로그아웃 할까요?", [
@@ -232,11 +233,10 @@ export default function MyPageScreen() {
         ) : null}
 
         <View style={{ flex: 1 }}>
-          <Text
-            style={[styles.label, { color: colors.subText }]}
-          >
-            {isKakao ? "카카오 로그인" : "이메일 로그인"}
-          </Text>
+          <Text style={[styles.label, { color: colors.subText }]}>
+  {isGoogle ? "구글 로그인" : "이메일 로그인"}
+</Text>
+
 
           <Text
             style={[styles.value, { color: colors.text }]}

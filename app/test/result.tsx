@@ -1,6 +1,6 @@
 import { useTheme } from "@/src/theme/ThemeProvider";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { TestQuestion } from "@/src/data/test/types";
@@ -24,44 +24,93 @@ export default function TestResult() {
   /* =========================
      📦 데이터 파싱
      ========================= */
-  const { questions, answers } = useMemo(() => {
+  const parsed = useMemo(() => {
+    if (typeof params.data !== "string") return null;
+
     try {
-      return JSON.parse(params.data as string) as {
+      return JSON.parse(params.data) as {
         questions: TestQuestion[];
-        answers: string[];
+        answers: any[]; // 🔥 단일 string | string[]
       };
-    } catch {
-      return { questions: [], answers: [] };
+    } catch (e) {
+      console.warn("❌ TestResult JSON parse failed", e);
+      return null;
     }
   }, [params.data]);
 
-  /* =========================
-     🧮 채점
-     ========================= */
-  const results = questions.map((q, i) => {
-    const user = normalize(answers[i] || "");
-    const correct = normalize(q.answers.join(" "));
-    const isCorrect = user === correct;
+  const questions = parsed?.questions ?? [];
+  const answers = parsed?.answers ?? [];
 
-    return {
-      question: q,
-      userAnswer: answers[i] || "",
-      correctAnswer: q.answers.join(" "),
-      isCorrect,
-    };
-  });
+  /* =========================
+     🧮 채점 로직
+     ========================= */
+  const results = useMemo(() => {
+    return questions.map((q, i) => {
+      const userRaw = answers[i];
+
+      /* =========================
+         🅰 WORD_BLANK (다중 단어)
+         ========================= */
+      if (q.type === "WORD_BLANK") {
+        const correctTexts = q.answers.texts ?? [];
+        const userTexts = Array.isArray(userRaw)
+          ? userRaw
+          : [];
+
+        const normalizedUser = userTexts.map(normalize);
+        const normalizedCorrect = correctTexts.map(normalize);
+
+        const correctCount = normalizedCorrect.filter((c) =>
+          normalizedUser.includes(c)
+        ).length;
+
+        const isCorrect =
+          correctCount === normalizedCorrect.length;
+
+        return {
+          question: q,
+          userAnswer: userTexts.join(", "),
+          correctAnswer: correctTexts.join(", "),
+          isCorrect,
+          partial:
+            `${correctCount} / ${normalizedCorrect.length}`,
+        };
+      }
+
+      /* =========================
+         🅱 나머지 (단일 정답)
+         ========================= */
+      const user = normalize(String(userRaw || ""));
+      const correct = normalize(q.answers.text ?? "");
+      const isCorrect = user === correct;
+
+      return {
+        question: q,
+        userAnswer: String(userRaw || ""),
+        correctAnswer: q.answers.text ?? "",
+        isCorrect,
+      };
+    });
+  }, [questions, answers]);
 
   const score = results.filter((r) => r.isCorrect).length;
   const total = questions.length;
 
   /* =========================
-     💾 오답노트 저장 (한 번만)
+     💾 오답노트 저장 (1회)
      ========================= */
+  const savedRef = useRef(false);
+
   useEffect(() => {
-    if (questions.length > 0) {
+    if (
+      !savedRef.current &&
+      questions.length > 0 &&
+      answers.length > 0
+    ) {
       saveMemorizeRecord(questions, answers);
+      savedRef.current = true;
     }
-  }, []);
+  }, [questions, answers]);
 
   /* =========================
      🔁 다시 시험
@@ -70,12 +119,47 @@ export default function TestResult() {
     router.replace("/test");
   };
 
+  /* =========================
+     🚨 방어 UI
+     ========================= */
+  if (!parsed) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.background,
+          justifyContent: "center",
+          alignItems: "center",
+          padding: 24,
+        }}
+      >
+        <Text style={{ color: colors.subText, marginBottom: 16 }}>
+          시험 결과를 불러올 수 없어요 😢
+        </Text>
+
+        <Pressable
+          onPress={retry}
+          style={{
+            paddingVertical: 14,
+            paddingHorizontal: 24,
+            borderRadius: 14,
+            backgroundColor: colors.primary,
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "700" }}>
+            다시 시험 보기
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ padding: 24 }}
     >
-      {/* 점수 */}
+      {/* 점수 요약 */}
       <View
         style={{
           padding: 20,
@@ -122,60 +206,55 @@ export default function TestResult() {
       </View>
 
       {/* 문제별 결과 */}
-      {results.map((r, idx) => {
-        const { question } = r;
-
-        return (
-          <View
-            key={question.id}
+      {results.map((r: any, idx) => (
+        <View
+          key={r.question.id}
+          style={{
+            marginBottom: 24,
+            padding: 16,
+            borderRadius: 14,
+            backgroundColor: colors.card,
+            borderWidth: 1,
+            borderColor: r.isCorrect
+              ? colors.primary
+              : colors.error,
+          }}
+        >
+          <Text
             style={{
-              marginBottom: 24,
-              padding: 16,
-              borderRadius: 14,
-              backgroundColor: colors.card,
-              borderWidth: 1,
-              borderColor: r.isCorrect
-                ? colors.primary
-                : colors.error,
+              fontSize: 13,
+              color: colors.subText,
+              marginBottom: 4,
             }}
           >
-            {/* 상단 */}
-            <Text
-              style={{
-                fontSize: 13,
-                color: colors.subText,
-                marginBottom: 4,
-              }}
-            >
-              {idx + 1}. {question.verse.reference}
-            </Text>
+            {idx + 1}. {r.question.verse.group}
+          </Text>
 
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "600",
-                color: colors.text,
-                marginBottom: 12,
-              }}
-            >
-              {question.prompt}
-            </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              fontWeight: "600",
+              color: colors.text,
+              marginBottom: 12,
+            }}
+          >
+            {r.question.prompt}
+          </Text>
 
-            {/* 사용자 답 */}
-            <Text
-              style={{
-                fontSize: 14,
-                color: r.isCorrect
-                  ? colors.primary
-                  : colors.error,
-                marginBottom: 6,
-              }}
-            >
-              내 답: {r.userAnswer || "(미입력)"}
-            </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              color: r.isCorrect
+                ? colors.primary
+                : colors.error,
+              marginBottom: 6,
+            }}
+          >
+            내 답: {r.userAnswer || "(미입력)"}
+          </Text>
 
-            {/* 정답 */}
-            {!r.isCorrect && (
+          {!r.isCorrect && (
+            <>
               <Text
                 style={{
                   fontSize: 14,
@@ -184,12 +263,23 @@ export default function TestResult() {
               >
                 정답: {r.correctAnswer}
               </Text>
-            )}
-          </View>
-        );
-      })}
 
-      {/* 버튼 */}
+              {"partial" in r && (
+                <Text
+                  style={{
+                    marginTop: 4,
+                    fontSize: 12,
+                    color: colors.subText,
+                  }}
+                >
+                  맞힌 개수: {r.partial}
+                </Text>
+              )}
+            </>
+          )}
+        </View>
+      ))}
+
       <Pressable
         onPress={retry}
         style={{
@@ -211,7 +301,6 @@ export default function TestResult() {
         </Text>
       </Pressable>
 
-      {/* 하단 여백 */}
       <View style={{ height: 40 }} />
     </ScrollView>
   );

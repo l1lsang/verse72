@@ -1,5 +1,7 @@
 import { router } from "expo-router";
-import { signInWithCustomToken, signInWithEmailAndPassword } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+} from "firebase/auth";
 import { useState } from "react";
 import {
   Alert,
@@ -10,11 +12,14 @@ import {
   View,
 } from "react-native";
 
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import {
+  GoogleAuthProvider,
+  signInWithCredential,
+} from "firebase/auth";
+
 import { auth } from "@/src/config/firebase";
 import { useTheme } from "@/src/theme/ThemeProvider";
-
-// ✅ 카카오 네이티브 SDK
-import { login as kakaoLogin } from "@react-native-kakao/user";
 
 export default function LoginScreen() {
   const { colors } = useTheme();
@@ -30,7 +35,10 @@ export default function LoginScreen() {
     const safeEmail = email.trim();
 
     if (!safeEmail || !password) {
-      Alert.alert("입력 오류", "이메일과 비밀번호를 입력해주세요.");
+      Alert.alert(
+        "입력 오류",
+        "이메일과 비밀번호를 입력해주세요."
+      );
       return;
     }
 
@@ -39,9 +47,12 @@ export default function LoginScreen() {
     try {
       setLoading(true);
 
-      await signInWithEmailAndPassword(auth, safeEmail, password);
+      await signInWithEmailAndPassword(
+        auth,
+        safeEmail,
+        password
+      );
 
-      // 🔥 루트로 이동 → _layout.tsx에서 Auth 상태 재평가
       router.replace("/");
     } catch (e: any) {
       let message = "이메일 로그인에 실패했습니다.";
@@ -69,66 +80,50 @@ export default function LoginScreen() {
   };
 
   /* ===============================
-     🟡 카카오 로그인
-     (네이티브 SDK → 서버 → Firebase)
+     🔵 Google 네이티브 로그인
      =============================== */
-  const loginWithKakao = async () => {
-    if (loading) return;
+  const loginWithGoogle = async () => {
+  if (loading) return;
 
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      /* 1️⃣ 카카오 네이티브 로그인 */
-      const kakaoToken = await kakaoLogin();
-      const kakaoAccessToken = kakaoToken.accessToken;
+    await GoogleSignin.hasPlayServices({
+      showPlayServicesUpdateDialog: true,
+    });
 
-      if (!kakaoAccessToken) {
-        throw new Error("No Kakao access token");
-      }
+    const userInfo = await GoogleSignin.signIn();
 
-      /* 2️⃣ 서버에 Kakao accessToken 전달 */
-      const res = await fetch(
-        "https://72-3.vercel.app/auth/kakao",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            kakaoAccessToken,
-          }),
-        }
-      );
-
-      if (!res.ok) {
-        throw new Error("Server authentication failed");
-      }
-
-      const { customToken } = await res.json();
-
-      if (!customToken) {
-        throw new Error("No Firebase custom token");
-      }
-
-      /* 3️⃣ Firebase Custom Token 로그인 */
-      await signInWithCustomToken(auth, customToken);
-
-      // 🔁 루트로 이동
-      router.replace("/");
-    } catch (e: any) {
-      console.error("🔥 KAKAO LOGIN ERROR:", e);
-
-      // 사용자가 취소한 경우는 조용히 종료
-      if (e?.message?.includes("cancel")) return;
-
-      Alert.alert(
-        "카카오 로그인 실패",
-        "카카오 로그인 중 오류가 발생했습니다."
-      );
-    } finally {
-      setLoading(false);
+    const idToken = userInfo.data?.idToken;
+    if (!idToken) {
+      throw new Error("NO_ID_TOKEN");
     }
-  };
+
+    const credential =
+      GoogleAuthProvider.credential(idToken);
+
+    await signInWithCredential(auth, credential);
+
+    router.replace("/");
+  } catch (e: any) {
+    console.error("🔥 GOOGLE LOGIN ERROR:", e);
+
+    if (
+      e?.code === "SIGN_IN_CANCELLED" ||
+      e?.message?.includes("cancel")
+    ) {
+      return;
+    }
+
+    Alert.alert(
+      "구글 로그인 실패",
+      "구글 로그인 중 오류가 발생했습니다."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <View
@@ -149,7 +144,10 @@ export default function LoginScreen() {
         onChangeText={setEmail}
         style={[
           styles.input,
-          { borderColor: colors.border, color: colors.text },
+          {
+            borderColor: colors.border,
+            color: colors.text,
+          },
         ]}
         autoCapitalize="none"
         keyboardType="email-address"
@@ -164,7 +162,10 @@ export default function LoginScreen() {
         secureTextEntry
         style={[
           styles.input,
-          { borderColor: colors.border, color: colors.text },
+          {
+            borderColor: colors.border,
+            color: colors.text,
+          },
         ]}
       />
 
@@ -195,17 +196,17 @@ export default function LoginScreen() {
         또는
       </Text>
 
-      {/* 🟡 카카오 로그인 */}
+      {/* 🔵 Google 로그인 */}
       <Pressable
         disabled={loading}
-        onPress={loginWithKakao}
+        onPress={loginWithGoogle}
         style={[
-          styles.kakaoButton,
+          styles.googleButton,
           { opacity: loading ? 0.6 : 1 },
         ]}
       >
-        <Text style={styles.kakaoButtonText}>
-          카카오로 로그인
+        <Text style={styles.googleButtonText}>
+          Google로 로그인
         </Text>
       </Pressable>
 
@@ -259,14 +260,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 16,
   },
-  kakaoButton: {
-    backgroundColor: "#FEE500",
+  googleButton: {
+    backgroundColor: "#4285F4",
     padding: 14,
     borderRadius: 8,
     alignItems: "center",
   },
-  kakaoButtonText: {
-    color: "#000",
+  googleButtonText: {
+    color: "#fff",
     fontWeight: "700",
     fontSize: 16,
   },

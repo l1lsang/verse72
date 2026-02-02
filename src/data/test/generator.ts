@@ -25,18 +25,37 @@ function makeWordBlank(v: VerseData): TestQuestion {
     (t) => t.length > 1 && !STOP_WORDS.has(t)
   );
 
-  const answer = shuffle(candidates)[0];
-  const prompt = v.text.replace(answer, "____");
+  // ✅ 빈칸 개수: 4~5개 랜덤
+  const blankCount = Math.min(
+    candidates.length,
+    Math.random() < 0.5 ? 4 : 5
+  );
+
+  // ✅ 빈칸으로 만들 단어 선택
+  const answers = shuffle(candidates).slice(0, blankCount);
+
+  // ✅ 각 단어를 개별 빈칸으로 치환
+  let prompt = v.text;
+  answers.forEach((word) => {
+    prompt = prompt.replace(word, "____");
+  });
 
   return {
     id: `q_${v.id}_word`,
     mode: "DUNAMIS",
     type: "WORD_BLANK",
+
     prompt,
-    answers: { text: answer },
+
+    // 🔥 여러 개 정답
+    answers: {
+      texts: answers, // ["하나님은", "우리의", "피난처요", ...]
+    },
+
     verse: v,
   };
 }
+
 
 /* =========================
    🅱 두나미스: 앞 두 어절 제공
@@ -51,7 +70,7 @@ function makeTwoPhraseRest(v: VerseData): TestQuestion {
     id: `q_${v.id}_two`,
     mode: "DUNAMIS",
     type: "TWO_PHRASE_REST",
-    prompt: `${head} ____`,
+    prompt: `${head} _____________________`,
     answers: { text: rest },
     verse: v,
   };

@@ -3,9 +3,7 @@
     "name": "일용할 양식",
     "slug": "verse72",
     "scheme": "verse72",
-
-    "version": "2.3.1",
-
+    "version": "3.3.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "splash": {
@@ -15,39 +13,24 @@
     },
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-
     "ios": {
       "bundleIdentifier": "com.quokka.dailybread",
-      "buildNumber": "21"
+      "buildNumber": "25"
     },
-
     "android": {
       "package": "com.quokka.dailybread",
-      "versionCode": 21
+      "versionCode": 25
     },
-
     "extra": {
-      "KAKAO_REST_API_KEY": "e2936c43f295f62ebe5931ac544fc666",
-
+      "EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID": "701952248139-8lo47lse61hio35s33mc19be1hmmmbe2.apps.googleusercontent.com",
       "eas": {
         "projectId": "c3609fab-af53-4466-b35d-7efa26a3f4b2"
       }
     },
-
-   "plugins": [
-  "expo-router",
-  [
-    "expo-build-properties",
-    {
-      "android": {
-        "extraMavenRepos": [
-          "https://devrepo.kakao.com/nexus/content/groups/public/"
-        ]
-      }
-    }
-  ],
-  "expo-web-browser"
-]
-
+    "plugins": [
+      "expo-router",
+      "expo-web-browser",
+      "@react-native-google-signin/google-signin"
+    ]
   }
 }

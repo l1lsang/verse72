@@ -12,51 +12,21 @@
     </intent>
   </queries>
   <application android:name=".MainApplication" android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:allowBackup="true" android:theme="@style/AppTheme" android:supportsRtl="true" android:enableOnBackInvokedCallback="false">
-  <meta-data
-    android:name="com.kakao.sdk.AppKey"
-    android:value="@string/kakao_app_key" />
     <meta-data android:name="expo.modules.updates.ENABLED" android:value="false"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_CHECK_ON_LAUNCH" android:value="ALWAYS"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_LAUNCH_WAIT_MS" android:value="0"/>
-   <activity
-    android:name=".MainActivity"
-    android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode"
-    android:launchMode="singleTask"
-    android:windowSoftInputMode="adjustResize"
-    android:theme="@style/Theme.App.SplashScreen"
-    android:exported="true"
-    android:screenOrientation="portrait">
-
-    <intent-filter>
-      <action android:name="android.intent.action.MAIN"/>
-      <category android:name="android.intent.category.LAUNCHER"/>
-    </intent-filter>
-
-    <!-- 🔁 Expo / 앱 딥링크 (그대로 유지) -->
-    <intent-filter>
-      <action android:name="android.intent.action.VIEW"/>
-      <category android:name="android.intent.category.DEFAULT"/>
-      <category android:name="android.intent.category.BROWSABLE"/>
-      <data android:scheme="verse72"/>
-      <data android:scheme="exp+verse72"/>
-    </intent-filter>
-  </activity>
-
-  <!-- ✅ 카카오 OAuth 전용 Activity (⭐ 이게 핵심) -->
-  <activity
-    android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
-    android:exported="true">
-    <intent-filter>
-      <action android:name="android.intent.action.VIEW"/>
-
-      <category android:name="android.intent.category.DEFAULT"/>
-      <category android:name="android.intent.category.BROWSABLE"/>
-
-      <!-- ⚠️ 네이티브 앱 키 그대로 -->
-      <data
-        android:scheme="255e78d807b110d518bd62fb9b7f957b"
-        android:host="oauth"/>
-    </intent-filter>
-  </activity>
+    <activity android:name=".MainActivity" android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode" android:launchMode="singleTask" android:windowSoftInputMode="adjustResize" android:theme="@style/Theme.App.SplashScreen" android:exported="true" android:screenOrientation="portrait">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN"/>
+        <category android:name="android.intent.category.LAUNCHER"/>
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <data android:scheme="verse72"/>
+        <data android:scheme="exp+verse72"/>
+      </intent-filter>
+    </activity>
   </application>
 </manifest>

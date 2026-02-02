@@ -1,5 +1,6 @@
 import { verseGroups } from "@/src/data/verseGroups";
 import { useTheme } from "@/src/theme/ThemeProvider";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
   Pressable,
@@ -18,6 +19,27 @@ export default function SeventyTwoGroups() {
         { backgroundColor: colors.background },
       ]}
     >
+      {/* ⬅️ 뒤로가기 버튼 */}
+      <Pressable
+        onPress={() => router.back()}
+        style={{
+          position: "absolute",
+          top: 12,
+          left: 12,
+          zIndex: 10,
+          padding: 8,
+          borderRadius: 20,
+          backgroundColor: colors.card,
+        }}
+        hitSlop={10}
+      >
+        <Ionicons
+          name="chevron-back"
+          size={26}
+          color={colors.text}
+        />
+      </Pressable>
+
       {/* 제목 */}
       <Text style={[styles.title, { color: colors.text }]}>
         72구절
@@ -42,7 +64,6 @@ export default function SeventyTwoGroups() {
             },
           ]}
         >
-          {/* 카드 상단 */}
           <Text
             style={[
               styles.cardTitle,
@@ -52,7 +73,6 @@ export default function SeventyTwoGroups() {
             {group.key}
           </Text>
 
-          {/* 카드 메인 */}
           <Text
             style={[
               styles.cardSubtitle,
@@ -61,8 +81,6 @@ export default function SeventyTwoGroups() {
           >
             {group.title}
           </Text>
-
-         
         </Pressable>
       ))}
     </View>
@@ -73,6 +91,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    paddingTop: 56, // ✅ 겹침 방지 핵심
   },
 
   title: {
